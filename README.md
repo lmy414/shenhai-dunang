@@ -19,6 +19,10 @@ npx serve .
 - `index.html` / `app.js` / `style.css`：游戏页面与逻辑
 - `assets/`：背景、角色立绘与图标
 
+## 维护教程
+
+不会用命令行也没关系，看 [用 AI 维护这个项目](docs/AI协作维护教程.md)。
+
 ## 待补充
 
 - 玩法介绍
