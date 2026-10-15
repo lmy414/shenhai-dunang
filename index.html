@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>深海的嘟囔 · 角色活动求索</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+  <img class="bg" src="assets/bg.jpg" alt="">
+
+  <!-- 顶栏货币：遮住底图上的数字，显示实时余额 -->
+  <div class="U cur" id="riceNum" style="--x:1454;--y:28;--w:126;--h:44">0</div>
+  <div class="U cur" id="whaleNum" style="--x:1724;--y:28;--w:110;--h:44">0</div>
+
+  <!-- 可点区域（坐标对应底图 2000×1125） -->
+  <button class="U hot" data-act="shop-rice" title="米饭" style="--x:1380;--y:20;--w:200;--h:58;--r:29"></button>
+  <button class="U hot round" data-act="shop-rice" title="充值米饭" style="--x:1583;--y:24;--w:50;--h:50"></button>
+  <button class="U hot" data-act="shop-whale" title="鲸币" style="--x:1650;--y:20;--w:185;--h:58;--r:29"></button>
+  <button class="U hot round" data-act="shop-whale" title="兑换鲸币" style="--x:1836;--y:24;--w:50;--h:50"></button>
+  <button class="U hot round" data-act="settings" title="设置" style="--x:1903;--y:13;--w:74;--h:74"></button>
+
+  <button class="U hot" data-act="tab" data-tab="0" title="角色活动求索" style="--x:26;--y:138;--w:248;--h:182"></button>
+  <button class="U hot" data-act="tab" data-tab="1" title="饭点活动求索" style="--x:30;--y:330;--w:236;--h:166"></button>
+  <button class="U hot" data-act="tab" data-tab="2" title="摸鱼活动求索" style="--x:30;--y:506;--w:236;--h:164"></button>
+  <button class="U hot" data-act="tab" data-tab="3" title="武器活动求索" style="--x:30;--y:682;--w:236;--h:162"></button>
+
+  <button class="U hot" data-act="details" title="卡池详情" style="--x:300;--y:180;--w:580;--h:260"></button>
+  <button class="U hot" data-act="preview" title="查看 UP 角色" style="--x:1546;--y:362;--w:426;--h:152;--r:76"></button>
+  <button class="U hot round" data-act="preview" title="角色预览" style="--x:1860;--y:515;--w:96;--h:96"></button>
+
+  <button class="U hot" data-act="shop-rice" title="食堂兑换" style="--x:50;--y:928;--w:124;--h:168"></button>
+  <button class="U hot" data-act="details" title="深度思考" style="--x:194;--y:928;--w:126;--h:168"></button>
+  <button class="U hot" data-act="history" title="摸鱼记录" style="--x:338;--y:928;--w:126;--h:168"></button>
+
+  <button class="U hot hex" data-act="pull" data-n="1" title="求索1次" style="--x:1186;--y:916;--w:382;--h:128"></button>
+  <button class="U hot hex ten" data-act="pull" data-n="10" title="求索10次" style="--x:1575;--y:916;--w:384;--h:128"></button>
+
+  <div class="U pity" id="pity" style="--x:1186;--y:1050;--w:772;--h:40"></div>
+
+  <!-- 抽卡演出层 -->
+  <div id="fx">
+    <canvas id="fxCanvas"></canvas>
+    <div id="reveal">
+      <div class="bgtext"><span></span><span></span></div>
+      <div class="rays"></div>
+      <div class="halo"></div>
+      <div class="ground"></div>
+      <div class="shock"></div>
+      <img class="char" alt="">
+      <div class="sweep"></div>
+      <div class="count"></div>
+      <div class="new">NEW</div>
+      <div class="info">
+        <div class="stars"></div>
+        <div class="nm"></div>
+        <div class="sub"></div>
+        <div class="quote"></div>
+      </div>
+      <div class="tip">点击屏幕继续</div>
+      <div class="wipe"></div>
+    </div>
+    <div id="summary">
+      <div class="ttl">求 索 结 果</div>
+      <div class="cards"></div>
+      <div class="row">
+        <button class="btn" data-act="again">再来十次</button>
+        <button class="btn dark" data-act="fx-close">确认</button>
+      </div>
+    </div>
+    <div id="flash"></div>
+    <button id="skip">跳过 ▸▸</button>
+  </div>
+
+  <!-- 弹窗 -->
+  <div class="mask" id="mask">
+    <div class="panel" id="panel">
+      <button class="x" data-act="modal-close">✕</button>
+      <h2 id="panelTitle"></h2>
+      <div class="body" id="panelBody"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
