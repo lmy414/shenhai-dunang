@@ -4,34 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1d2b4f">
-<title>深海的嘟囔 · 深海观测站</title>
+<title>深海的嘟囔 · 角色活动求索</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="stage" data-view="home">
+<div id="stage" data-view="gacha">
   <img class="scene-bg" src="assets/bg_clean.png" alt="">
   <!-- 原图切片负责视觉，DOM 负责排布、动态文字与交互。 -->
   <header class="game-header">
-    <button class="brand" data-act="navigate" data-view="home" aria-label="返回大厅"><img src="assets/app.png" alt=""><span>深海的嘟囔</span></button>
+    <button class="brand" data-act="navigate" data-view="gacha" aria-label="返回求索"><img src="assets/app.png" alt=""><span>深海的嘟囔</span></button>
     <div class="resources">
       <button class="resource" data-act="shop-rice" aria-label="米饭，打开食堂"><img src="assets/ui/resource-rice.png" alt=""><span id="riceNum">0</span></button>
       <button class="resource" data-act="shop-whale" aria-label="鲸币，打开兑换"><img src="assets/ui/resource-whale.png" alt=""><span id="whaleNum">0</span></button>
-      <button class="icon-button" data-act="navigate" data-view="home" aria-label="返回大厅"><img src="assets/ui/close.png" alt=""></button>
+      <button class="icon-button" data-act="navigate" data-view="gacha" aria-label="返回求索"><img src="assets/ui/close.png" alt=""></button>
     </div>
   </header>
   <main>
-    <section class="game-view home-view" id="homeView" aria-label="大厅">
-      <div class="home-heading"><img src="assets/ui/title-tab-blank.png" alt="深海的嘟囔"><h1>深海观测站</h1><p class="original-capsule">欢迎回到深海，今天也要管饭哦。</p></div>
-      <button class="lobby-character" data-act="preview" aria-label="查看 DS娘"><img src="assets/chars/ds.png" alt="DS娘"></button>
-      <div class="character-caption"><img src="assets/ui/ds-badge.png" alt="5 星 DS娘 UP"></div>
-      <div class="home-menu">
-        <button class="summon-entry" data-act="navigate" data-view="gacha"><img src="assets/ui/activity-character.png" alt="进入角色活动求索"></button>
-        <button class="collection-entry" data-act="navigate" data-view="inventory"><img class="collection-frame" src="assets/ui/activity-frame.png" alt=""><img class="collection-symbol" src="assets/app.png" alt=""><strong>角色仓库</strong><span id="homeCollection">0 / 10</span></button>
-      </div>
-    </section>
-    <section class="game-view gacha-view" id="gachaView" aria-label="角色活动求索" hidden>
+    <section class="game-view gacha-view" id="gachaView" aria-label="角色与武器活动求索">
       <h1 class="sr-only">角色活动求索</h1>
   <img class="gacha-original-bg" src="assets/bg.jpg" alt="">
+
+  <div class="weapon-scene" aria-hidden="true">
+    <img class="weapon-plate weapon-fallback" src="assets/bg_weapon.jpg" alt="">
+    <img class="weapon-plate weapon-composite" alt="">
+    <div hidden>
+      <img data-layer data-x="0" data-y="0" src="assets/ui/weapon/background.png" alt="">
+      <img data-layer data-x="288" data-y="152" src="assets/ui/weapon/title.png" alt="">
+      <img data-layer data-x="312" data-y="460" src="assets/ui/weapon/rules.png" alt="">
+      <img data-layer data-x="20" data-y="135" src="assets/ui/weapon/activity-character.png" alt="">
+      <img data-layer data-x="24" data-y="334" src="assets/ui/weapon/activity-rice.png" alt="">
+      <img data-layer data-x="24" data-y="515" src="assets/ui/weapon/activity-whale.png" alt="">
+      <img data-layer data-x="24" data-y="694" src="assets/ui/weapon/activity-weapon.png" alt="">
+      <img data-layer data-x="1376" data-y="4" src="assets/ui/weapon/resource-rice.png" alt="">
+      <img data-layer data-x="1680" data-y="4" src="assets/ui/weapon/resource-whale.png" alt="">
+      <img data-layer data-x="1940" data-y="4" src="assets/ui/weapon/close.png" alt="">
+      <img data-layer data-x="1568" data-y="352" src="assets/ui/weapon/badge.png" alt="">
+      <img data-layer data-x="44" data-y="940" src="assets/ui/weapon/shortcut-shop.png" alt="">
+      <img data-layer data-x="192" data-y="940" src="assets/ui/weapon/shortcut-details.png" alt="">
+      <img data-layer data-x="336" data-y="940" src="assets/ui/weapon/shortcut-history.png" alt="">
+      <img data-layer data-x="1204" data-y="932" src="assets/ui/weapon/pull-one.png" alt="">
+      <img data-layer data-x="1608" data-y="932" src="assets/ui/weapon/pull-ten.png" alt="">
+    </div>
+  </div>
+  <button class="U showcase" data-act="preview" title="查看 UP 武器" aria-label="查看 UP 武器" style="--x:1010;--y:110;--w:470;--h:760"><img src="assets/weapons/whalefall.png" alt="鲸落"></button>
 
   <!-- 顶栏货币：遮住底图上的数字，显示实时余额 -->
   <div class="U cur" id="gachaRiceNum" style="--x:1454;--y:28;--w:126;--h:44">0</div>
@@ -42,7 +57,7 @@
   <button class="U hot round" data-act="shop-rice" title="充值米饭" aria-label="充值米饭" style="--x:1583;--y:24;--w:50;--h:50"></button>
   <button class="U hot" data-act="shop-whale" title="鲸币" aria-label="鲸币" style="--x:1650;--y:20;--w:185;--h:58;--r:29"></button>
   <button class="U hot round" data-act="shop-whale" title="兑换鲸币" aria-label="兑换鲸币" style="--x:1836;--y:24;--w:50;--h:50"></button>
-  <button class="U hot round" data-act="navigate" data-view="home" title="返回大厅" aria-label="返回大厅" style="--x:1903;--y:13;--w:74;--h:74"></button>
+  <button class="U hot round" data-act="settings" title="设置" aria-label="设置" style="--x:1903;--y:13;--w:74;--h:74"></button>
 
   <button class="U hot" data-act="tab" data-tab="0" title="角色活动求索" aria-label="角色活动求索" style="--x:26;--y:138;--w:248;--h:182"></button>
   <button class="U hot" data-act="tab" data-tab="1" title="饭点活动求索" aria-label="饭点活动求索" style="--x:30;--y:330;--w:236;--h:166"></button>
@@ -60,7 +75,11 @@
   <button class="U hot hex" data-act="pull" data-n="1" title="求索1次" aria-label="求索1次" style="--x:1186;--y:916;--w:382;--h:128"></button>
   <button class="U hot hex ten" data-act="pull" data-n="10" title="求索10次" aria-label="求索10次" style="--x:1575;--y:916;--w:384;--h:128"></button>
 
-  <div class="U credit" style="--x:488;--y:1010;--w:420;--h:100">
+  <!-- 仓库入口沿用现有图标，和原图的底部入口排在同一行。 -->
+  <button class="U warehouse-entry" data-act="navigate" data-view="characters" aria-label="角色仓库" style="--x:482;--y:928;--w:124;--h:168"><img src="assets/app.png" alt=""><span>角色仓库</span></button>
+  <button class="U warehouse-entry" data-act="navigate" data-view="weapons" aria-label="武器仓库" style="--x:626;--y:928;--w:124;--h:168"><img src="assets/icons/spoon.png" alt=""><span>武器仓库</span></button>
+
+  <div class="U credit" style="--x:806;--y:1010;--w:350;--h:100">
     <div class="lbl">制作者</div>
     <div>B站：镜花_Mirror</div>
     <div>B站：彼岸花Channel</div>
@@ -68,16 +87,22 @@
 
   <div class="U pity" id="pity" style="--x:1186;--y:1050;--w:772;--h:40"></div>
 
-  <div class="U gacha-pity-number" id="gachaHardPity" style="--x:411.1328125;--y:544.921875;--w:64.453125;--h:44.921875">90</div>
+  <div class="U gacha-pity-number pity-character" style="--x:411.1328125;--y:544.921875;--w:64.453125;--h:44.921875">90</div>
+  <div class="U gacha-pity-number pity-weapon" style="--x:406.25;--y:546.875;--w:67.3828;--h:43.9453">90</div>
     </section>
-    <section class="game-view inventory-view" id="inventoryView" aria-label="角色仓库" hidden>
-      <div class="view-heading original-capsule"><h1>角色仓库 <small id="collectionTotal"></small></h1></div>
-      <div class="inventory-toolbar"><div class="inventory-tabs" aria-label="持有状态"><button class="active" data-act="inventory-mode" data-mode="owned" aria-pressed="true">已获得</button><button data-act="inventory-mode" data-mode="all" aria-pressed="false">全部角色</button></div><label>星级 <select id="inventoryRarity"><option value="0">全部星级</option><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option></select></label></div>
-      <div class="inventory-grid" id="inventoryGrid" aria-live="polite"></div>
+    <section class="game-view inventory-view" id="charactersView" aria-label="角色仓库" hidden>
+      <div class="view-heading original-capsule"><h1>角色仓库 <small class="collection-total"></small></h1></div>
+      <div class="inventory-toolbar"><div class="inventory-tabs" aria-label="持有状态"><button class="active" data-act="inventory-mode" data-mode="owned" aria-pressed="true">已获得</button><button data-act="inventory-mode" data-mode="all" aria-pressed="false">全部角色</button></div><label>星级 <select class="inventory-rarity" aria-label="星级"><option value="0">全部星级</option><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option></select></label></div>
+      <div class="inventory-grid"  aria-live="polite"></div>
+    </section>
+    <section class="game-view inventory-view" id="weaponsView" aria-label="武器仓库" hidden>
+      <div class="view-heading original-capsule"><h1>武器仓库 <small class="collection-total"></small></h1></div>
+      <div class="inventory-toolbar"><div class="inventory-tabs" aria-label="持有状态"><button class="active" data-act="inventory-mode" data-mode="owned" aria-pressed="true">已获得</button><button data-act="inventory-mode" data-mode="all" aria-pressed="false">全部武器</button></div><label>星级 <select class="inventory-rarity" aria-label="星级"><option value="0">全部星级</option><option value="5">5 星</option><option value="4">4 星</option><option value="3">3 星</option></select></label></div>
+      <div class="inventory-grid"  aria-live="polite"></div>
     </section>
   </main>
   <footer class="game-footer">
-    <nav class="main-nav" aria-label="主导航"><button class="active" data-act="navigate" data-view="home" aria-current="page"><img src="assets/app.png" alt=""><span>大厅</span></button><button data-act="navigate" data-view="gacha"><img src="assets/icons/tail.png" alt=""><span>求索</span></button><button data-act="navigate" data-view="inventory"><img src="assets/icons/bulb.png" alt=""><span>仓库</span></button><button data-act="shop-rice"><img src="assets/icons/bowl.png" alt=""><span>食堂兑换</span></button></nav>
+    <nav class="main-nav" aria-label="主导航"><button data-act="navigate" data-view="gacha"><img src="assets/icons/tail.png" alt=""><span>返回求索</span></button><button data-act="navigate" data-view="characters"><img src="assets/app.png" alt=""><span>角色仓库</span></button><button data-act="navigate" data-view="weapons"><img src="assets/icons/spoon.png" alt=""><span>武器仓库</span></button><button data-act="shop-rice"><img src="assets/icons/bowl.png" alt=""><span>食堂兑换</span></button></nav>
     <span class="creator-credit">制作者<br>B站：镜花_Mirror<br>B站：彼岸花Channel</span>
     <div class="footer-tools"><button data-act="settings"><img src="assets/icons/bulb.png" alt=""><span>设置</span></button><button data-act="history"><img src="assets/icons/clock.png" alt=""><span>求索记录</span></button></div>
   </footer>

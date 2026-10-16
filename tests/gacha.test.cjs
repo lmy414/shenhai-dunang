@@ -19,6 +19,10 @@ function game(saved = {}) {
   vm.runInContext(rules + roll + '\nglobalThis.api = { state, rate5, softPity, pityStats, validPity, save };', context);
   context.api.random = (...numbers) => { context.Math.random = () => numbers.length ? numbers.shift() : .5; };
   context.api.roll = () => vm.runInContext('rollOne()', context);
+  context.api.pool = key => {
+    assert.ok(key === 'char' || key === 'weapon');
+    vm.runInContext(`pool = POOLS['${key}']; state.pool = pool.key;`, context);
+  };
   context.api.saved = () => JSON.parse(stored);
   return context.api;
 }
@@ -129,4 +133,84 @@ test('仓库不受 500 条记录上限影响，损坏字段使用安全默认值
   assert.equal(g.state.hardPity, 90);
   assert.equal(g.state.whale, 10);
   assert.equal(g.state.rice, 911);
+});
+
+test('武器旧存档保留收藏、历史、独立计数和角色进度', () => {
+  const g = game({ pool: 'weapon', wpity5: 89, wpity4: 9, wtotal: 349, pity5: 50, total: 800, owned: { ds: 5, whalefall: 2, baguette: 6 }, history: [{ id: 'whalefall', r: 5, t: 1, n: 100, p: 'weapon' }, { id: 'ds', r: 5, t: 2, n: 700 }] });
+  assert.equal(g.state.hardPity, 90);
+  assert.equal(g.state.owned.whalefall, 2);
+  assert.equal(g.state.history.length, 2);
+  g.random(.999, 0);
+  const result = g.roll();
+  assert.equal(result.id, 'whalefall');
+  assert.equal(result.kind, 'weapon');
+  assert.equal(result.isNew, false);
+  assert.equal(g.state.owned.whalefall, 3);
+  assert.equal(g.state.wpity5, 0);
+  assert.equal(g.state.wpity4, 0);
+  assert.equal(g.state.wtotal, 350);
+  assert.equal(g.state.pity5, 50);
+  assert.equal(g.state.total, 800);
+  assert.equal(g.state.history[0].p, 'weapon');
+  g.save();
+  const reloaded = game(g.saved());
+  assert.equal(reloaded.state.pool, 'weapon');
+  assert.equal(reloaded.state.owned.whalefall, 3);
+  assert.equal(reloaded.state.owned.ds, 5);
+});
+
+test('切池分别累计四星保底，两个池均遵守 0.08% 基础概率', () => {
+  const g = game({ pity5: 12, pity4: 9, wpity5: 20, wpity4: 8 });
+  g.pool('weapon');
+  g.random(.0008, .999, 0);
+  assert.equal(g.roll().r, 3);
+  assert.equal(g.state.wpity4, 9);
+  assert.equal(g.state.pity4, 9);
+  g.pool('char');
+  g.random(.0008, 0);
+  assert.equal(g.roll().r, 4);
+  assert.equal(g.state.wpity4, 9);
+  g.pool('weapon');
+  g.random(.0008, 0);
+  assert.equal(g.roll().r, 4);
+  g.random(.000799, 0);
+  assert.equal(g.roll().r, 5);
+});
+
+test('共用保底设置保留双池计数，超过上限各自在下一抽兑现', () => {
+  const g = game({ pity5: 89, wpity5: 60, hardPity: 90 });
+  g.state.hardPity = 30;
+  g.pool('weapon');
+  assert.equal(g.roll().r, 5);
+  assert.equal(g.state.pity5, 89);
+  g.pool('char');
+  assert.equal(g.roll().r, 5);
+  g.state.hardPity = 1;
+  for (const key of ['char', 'weapon']) {
+    g.pool(key);
+    for (let i = 0; i < 10; i++) assert.equal(g.roll().r, 5);
+  }
+  assert.equal(g.state.owned.ds, 11);
+  assert.equal(g.state.owned.whalefall, 11);
+});
+
+test('未知卡池与损坏武器字段安全回退，历史序号只接受正整数', () => {
+  const g = game({ pool: '__proto__', wpity5: -2, wpity4: '9', wtotal: null, history: [{ id: 'ds', r: 5, t: 1, p: '__proto__' }, { id: 'whalefall', r: 5, t: 2, p: 'weapon', n: '<img>' }] });
+  assert.equal(g.state.pool, 'char');
+  assert.equal(g.state.wpity5, 0);
+  assert.equal(g.state.wpity4, 0);
+  assert.equal(g.state.wtotal, 0);
+  assert.equal(g.state.history.length, 1);
+  assert.equal(g.state.history[0].n, '');
+});
+
+test('角色与武器 ID 不重叠且全部展示素材存在', () => {
+  const context = vm.createContext({ localStorage: { getItem: () => null } });
+  vm.runInContext(rules + '\nglobalThis.items = ITEMS;', context);
+  const ids = context.items.map(c => c.id);
+  assert.equal(new Set(ids).size, 22);
+  for (const c of context.items) {
+    const filename = path.join(__dirname, '..', 'assets', c.kind === 'weapon' ? 'weapons' : 'chars', c.id + '.png');
+    assert.ok(fs.existsSync(filename), filename);
+  }
 });

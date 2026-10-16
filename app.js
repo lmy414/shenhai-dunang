@@ -13,8 +13,36 @@ const CHARS = [
   { id: 'zhipu',   name: '智谱娘',    sub: '眠狐',       r: 3, quote: '呼……醒着的时候，我可是很聪明的。' },
   { id: 'doubao',  name: '豆包娘',    sub: '红围巾',     r: 3, quote: '嘿！今天也要开开心心的！' },
 ];
-const BY_R = { 5: CHARS.filter(c => c.r === 5), 4: CHARS.filter(c => c.r === 4), 3: CHARS.filter(c => c.r === 3) };
-// 前 floor(7N/9) 抽固定基础概率，之后线性递增，第 N 抽必得；出金后重新计数。
+CHARS.forEach(c => { c.kind = 'char'; });
+
+// 武器数据。字段用 key 而不是 id：发布工作流会把 app.js 里所有 `id: '…'` 当作角色 id，去 assets/chars/ 检查立绘
+const WEAPON_DATA = [
+  { key: 'whalefall',   name: '鲸落',         type: '长柄', owner: 'ds',      r: 5, quote: '一鲸落，万物生。深海里最丰盛的一顿饭，是一头鲸慢慢沉下去时留下的。' },
+  { key: 'longthought', name: '长考·秋菊',    type: '短刃', owner: 'claude',  r: 4, quote: '先别急着落刀，再想一想。' },
+  { key: 'dragonclaw',  name: '白龙爪',       type: '拳套', owner: 'gpt',     r: 4, quote: '有什么想问的？先握个手吧。' },
+  { key: 'twinstar',    name: '双子星猫',     type: '手铳', owner: 'gemini',  r: 4, quote: '左边一枪打今天，右边一枪打明天。' },
+  { key: 'candor',      name: '直言',         type: '长柄', owner: 'grok',    r: 4, quote: '我只说真话，斧子也是。' },
+  { key: 'qianfan',     name: '千问扇',       type: '法器', owner: 'qwen',    r: 4, quote: '千问千答，扇子一开，慢慢说。' },
+  { key: 'baguette',    name: '刚出炉的法棍', type: '长柄', owner: 'mistral', r: 3, quote: '近战武器，也是午饭。' },
+  { key: 'crescent',    name: '月牙书签',     type: '短刃', owner: 'kimi',    r: 3, quote: '再长的书，也有读完的一页。' },
+  { key: 'chilisauce',  name: '豆瓣酱枪',     type: '手铳', owner: 'doubao',  r: 3, quote: '开饭啦！谁要加辣？' },
+  { key: 'sleepbell',   name: '安眠铃',       type: '法器', owner: 'zhipu',   r: 3, quote: '铃一响，就到午睡时间了。' },
+  { key: 'ovenmitt',    name: '隔热手套',     type: '拳套', owner: '',        r: 3, quote: '食堂后厨的标配，抽到不亏。' },
+  { key: 'ricebowl',    name: '小鲸饭碗',     type: '法器', owner: '',        r: 3, quote: '盛满大白米饭，深海里也不会饿肚子。' },
+];
+const WEAPONS = WEAPON_DATA.map(w => {
+  const o = CHARS.find(c => c.id === w.owner);
+  return { ...w, id: w.key, kind: 'weapon', sub: `${w.type} · ${o ? o.name + '专武' : '通用'}` };
+});
+
+// 卡池：两个池共用鲸币，保底计数、累计次数各算各的（state 里的字段名见 pity5/pity4/total）
+const POOLS = {
+  char:   { key: 'char',   items: CHARS,   banner: '深海的嘟囔', tab: '角色活动求索', noun: '角色', up: 'ds',        pity5: 'pity5',  pity4: 'pity4',  total: 'total' },
+  weapon: { key: 'weapon', items: WEAPONS, banner: '鲸落之勺',   tab: '武器活动求索', noun: '武器', up: 'whalefall', pity5: 'wpity5', pity4: 'wpity4', total: 'wtotal' },
+};
+const byR = (items, r) => items.filter(c => c.r === r);
+const upOf = p => p.items.find(c => c.id === p.up);
+// 两个池共用可调保底设置，各自独立累计抽数。
 const RATE5_MIN = 0.0008;
 const DEFAULT_PITY5 = 90, MAX_PITY5 = 10000;
 const RATE4 = 0.10;
@@ -22,9 +50,9 @@ const PITY4 = 10;        // 每 10 次必得 4 星或以上
 const RICE_PER_WHALE = 160;
 const pct = x => +(x * 100).toFixed(x < .01 ? 3 : 2) + '%';
 const RC = { 3: '120,180,255', 4: '196,136,255', 5: '255,201,84' };
-const BANNER = '深海的嘟囔';
 const img = p => `assets/${p}`;
 const charSrc = id => img(`chars/${id}.png`);
+const itemSrc = c => c.kind === 'weapon' ? img(`weapons/${c.id}.png`) : charSrc(c.id);
 
 function validPity(n) { return Number.isInteger(n) && n >= 1 && n <= MAX_PITY5; }
 function softPity(n) { return Math.floor(n * 7 / 9); }
@@ -48,15 +76,19 @@ const precisePct = p => (p * 100).toFixed(4).replace(/\.?0+$/, '') + '%';
 
 /* ================= 存档 ================= */
 const SAVE_KEY = 'ww-gacha-ds-v1';
-const state = Object.assign({ rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, history: [], sound: true, owned: {}, hardPity: DEFAULT_PITY5 }, load());
-// 保留原存档键和已有进度。旧版没有 hardPity 时使用 90，超出新保底的计数留到下一抽兑现。
+// 沿用存档键，补齐双池字段与可调保底；超出新上限的旧计数留到下一抽兑现。
+const SAVE_DEFAULTS = { rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, wpity5: 0, wpity4: 0, wtotal: 0, pool: 'char', history: [], sound: true, owned: {}, hardPity: DEFAULT_PITY5 };
+const state = Object.assign({}, SAVE_DEFAULTS, load());
 state.hardPity = validPity(state.hardPity) ? state.hardPity : DEFAULT_PITY5;
-for (const key of ['rice', 'whale', 'pity5', 'pity4', 'total']) {
-  if (!Number.isSafeInteger(state[key]) || state[key] < 0) state[key] = key === 'rice' ? 911 : key === 'whale' ? 10 : 0;
+for (const key of ['rice', 'whale', 'pity5', 'pity4', 'total', 'wpity5', 'wpity4', 'wtotal']) {
+  if (!Number.isSafeInteger(state[key]) || state[key] < 0) state[key] = SAVE_DEFAULTS[key];
 }
-state.owned = Object.fromEntries(CHARS.filter(c => Number.isSafeInteger(state.owned?.[c.id]) && state.owned[c.id] > 0).map(c => [c.id, state.owned[c.id]]));
-state.history = Array.isArray(state.history) ? state.history.filter(h => h && CHARS.some(c => c.id === h.id && c.r === h.r) && Number.isFinite(h.t)).slice(0, 500) : [];
+const ITEMS = [...CHARS, ...WEAPONS];
+state.owned = Object.fromEntries(ITEMS.filter(c => Number.isSafeInteger(state.owned?.[c.id]) && state.owned[c.id] > 0).map(c => [c.id, state.owned[c.id]]));
+state.history = Array.isArray(state.history) ? state.history.filter(h => h && Object.hasOwn(POOLS, h.p || 'char') && POOLS[h.p || 'char'].items.some(c => c.id === h.id && c.r === h.r) && Number.isFinite(h.t)).slice(0, 500).map(h => ({ id: h.id, r: h.r, t: h.t, n: Number.isSafeInteger(h.n) && h.n > 0 ? h.n : '', ...(h.p === 'weapon' ? { p: 'weapon' } : {}) })) : [];
 state.sound = state.sound !== false;
+let pool = Object.hasOwn(POOLS, state.pool) ? POOLS[state.pool] : POOLS.char;
+state.pool = pool.key;
 function load() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && typeof s === 'object' && !Array.isArray(s) ? s : {}; } catch (e) { return {}; } }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
 
@@ -64,7 +96,8 @@ function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
 let U = 1;
-let currentView = 'home', inventoryMode = 'owned', inventoryRarity = 0;
+let currentView = 'gacha';
+const inventoryFilters = { characters: { mode: 'owned', rarity: 0 }, weapons: { mode: 'owned', rarity: 0 } };
 function fit() {
   const portrait = currentView !== 'gacha' && matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
   const w = portrait ? innerWidth : Math.min(innerWidth, innerHeight * 16 / 9);
@@ -131,6 +164,8 @@ const SFX = (() => {
     tick(i) { tone(660 * Math.pow(1.122, i), 0, .16, 'triangle', .12); },
     summon(long) { noise(0, long ? 3.4 : 2.6, 200, 4200, .22, 1.2); tone(55, 0, long ? 3.5 : 2.7, 'sine', .25, 110); },
     impact() { tone(90, 0, .9, 'sine', .55, 40); noise(0, .5, 3000, 300, .35, .7); },
+    // 出金开局提示：一串快速上行的高音铃
+    goldHint() { [1568, 1976, 2349, 2637, 3136].forEach((f, i) => { tone(f, i * .05, .9, 'triangle', .09); tone(f * 1.5, i * .05 + .02, .6, 'sine', .03); }); },
     gold() { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => { tone(f, i * .07, 1.6, 'triangle', .14); tone(f * 2, i * .07 + .02, 1.2, 'sine', .05); }); },
     purple() { [440, 554, 659, 880].forEach((f, i) => tone(f, i * .08, 1.1, 'triangle', .13)); },
     blue() { [587, 784].forEach((f, i) => tone(f, i * .08, .8, 'triangle', .12)); },
@@ -150,6 +185,7 @@ const FX = (() => {
   let ambientRGB = RC[3], ambientR = 3, shake = 0;
 
   const PRE = '205,232,255';
+  const GOLD_HINT = '255,212,110'; // 出金开局提示用的金色
   const T_ORB0 = .07, T_ORB1 = .37, TR = .42, TR2 = .58; // 光球出现/吸入/第一次揭晓/金光升级
 
   function resize() {
@@ -196,10 +232,16 @@ const FX = (() => {
       maxR, t0: performance.now(), D: maxR === 5 ? 5000 : maxR === 4 ? 3700 : 3100, onDone, done: false,
       stage: 0, lastRing: 0, flare: 0, chroma: 0, absorbed: 0,
       color: PRE,
-      orbs: rs.map((r, i) => ({ a: i / n * Math.PI * 2 + rnd(-.3, .3), r0: rnd(.30, .46) * W, d: (i / n) * .07, trail: [], gone: false, tw: rnd(0, 6) })),
+      orbs: rs.map((r, i) => ({ a: i / n * Math.PI * 2 + rnd(-.3, .3), r0: rnd(.30, .46) * W, d: (i / n) * .07, trail: [], gone: false, tw: rnd(0, 6), gold: r === 5, rgb: r === 5 ? GOLD_HINT : PRE })),
       cracks: maxR === 5 ? makeCracks(k) : null,
     };
     SFX.dive();
+    // 出金：开局就给一道金光提示
+    if (maxR === 5) {
+      SFX.goldHint();
+      flashEl(.55, 'radial-gradient(ellipse at 50% 50%, rgba(255,236,170,.95), rgba(255,190,70,.75) 45%, rgba(120,70,0,.4))');
+      for (let i = 0; i < 3; i++) rings.push({ r: (20 + i * 40) * k, a: .9, rgb: GOLD_HINT, w: 3 - i * .6, sp: 3.2 - i * .4 });
+    }
     mode = 'summon'; loop();
   }
   function finishSummon() { if (S && !S.done) { S.done = true; const f = S.onDone; S = null; f && f(); } }
@@ -262,10 +304,10 @@ const FX = (() => {
     if (S.stage === 0 && t >= T_ORB1 - .05) { S.stage = 1; SFX.riser((TR - T_ORB1 + .05) * S.D / 1000); }
     if (S.stage === 1 && t >= TR) {
       S.stage = 2; SFX.boom();
-      const r1 = S.maxR >= 4 ? 4 : 3; // 出金时先闪紫光，后面再“升级”
-      impact(RC[r1], r1 === 4 ? 16 : 9);
-      if (r1 === 4) SFX.purple(); else SFX.blue();
-      burst(RC[r1], r1 === 4 ? 110 : 50, r1 === 4 ? 1.1 : .8);
+      const r1 = S.maxR; // 出金开局已经给了金光提示，这里直接揭晓金色，随后再裂开升级成光柱
+      impact(RC[r1], r1 === 5 ? 20 : r1 === 4 ? 16 : 9);
+      if (r1 === 5) SFX.goldHint(); else if (r1 === 4) SFX.purple(); else SFX.blue();
+      burst(RC[r1], r1 >= 4 ? 120 : 50, r1 >= 4 ? 1.2 : .8);
     }
     if (gold && S.stage === 2 && t >= TR2 - .09) { S.stage = 3; SFX.crack(); }
     if (gold && S.stage === 3 && t >= TR2) {
@@ -288,9 +330,19 @@ const FX = (() => {
         w.d += w.sp * dt * k * (1 + t * 3);
         if (w.d > W * .75) { w.d = rnd(10, 60) * k; w.a = rnd(0, Math.PI * 2); }
         const len = w.d * .18, c = Math.cos(w.a), s = Math.sin(w.a) * .62;
-        g.strokeStyle = `rgba(170,215,255,${.55 * fa * Math.min(1, w.d / (120 * k))})`; g.lineWidth = w.w * k;
+        g.strokeStyle = `rgba(${gold ? '255,214,130' : '170,215,255'},${(gold ? .8 : .55) * fa * Math.min(1, w.d / (120 * k))})`; g.lineWidth = w.w * k * (gold ? 1.3 : 1);
         g.beginPath(); g.moveTo(cx + c * w.d, cy + s * w.d); g.lineTo(cx + c * (w.d + len), cy + s * (w.d + len)); g.stroke();
       }
+    }
+
+    // 出金提示：揭晓前屏幕四周一圈金色微光，随呼吸明灭
+    if (gold && !revealed) {
+      const pul = .5 + .5 * Math.sin(now / 220);
+      const eg = g.createRadialGradient(cx, cy, Math.min(W, H) * .32, cx, cy, Math.hypot(W, H) * .62);
+      eg.addColorStop(0, 'rgba(255,200,90,0)');
+      eg.addColorStop(.55, `rgba(255,200,90,${(.05 + .05 * pul) * Math.min(1, t / .06)})`);
+      eg.addColorStop(1, `rgba(255,190,70,${(.3 + .2 * pul) * Math.min(1, t / .06)})`);
+      g.fillStyle = eg; g.fillRect(-60, -60, W + 120, H + 120);
     }
 
     // 涡旋粒子：向中心螺旋收拢（蓄力时加速）
@@ -338,16 +390,18 @@ const FX = (() => {
       o.trail.push([x, y]); if (o.trail.length > 16) o.trail.shift();
       for (let j = 1; j < o.trail.length; j++) {
         const f = j / o.trail.length;
-        g.strokeStyle = `rgba(${PRE},${f * .7})`; g.lineWidth = f * 7 * k;
+        g.strokeStyle = `rgba(${o.rgb},${f * (o.gold ? .9 : .7)})`; g.lineWidth = f * (o.gold ? 10 : 7) * k;
         g.beginPath(); g.moveTo(...o.trail[j - 1]); g.lineTo(...o.trail[j]); g.stroke();
       }
       const tw = .8 + .2 * Math.sin(now / 60 + o.tw);
-      glow(x, y, 34 * k * tw, PRE, .55); glow(x, y, 9 * k, '255,255,255', 1);
+      glow(x, y, (o.gold ? 58 : 34) * k * tw, o.rgb, o.gold ? .8 : .55); glow(x, y, (o.gold ? 13 : 9) * k, '255,255,255', 1);
+      if (o.gold && Math.random() < .6) shards.push({ x, y, vx: rnd(-1, 1) * k, vy: rnd(-1, 1) * k, life: 1, dec: .04, sz: rnd(1.5, 3), rgb: GOLD_HINT });
       if (u >= 1) {
         o.gone = true; S.absorbed++;
         SFX.tick(S.absorbed);
-        rings.push({ r: 14 * k, a: .8, rgb: PRE, w: 2, sp: 3 });
-        burstAt(cx, cy, PRE, 10, .5); kick(3);
+        rings.push({ r: 14 * k, a: .8, rgb: o.rgb, w: o.gold ? 3 : 2, sp: 3 });
+        burstAt(cx, cy, o.rgb, o.gold ? 40 : 10, o.gold ? .9 : .5); kick(o.gold ? 8 : 3);
+        if (o.gold) SFX.goldHint();
       }
     });
 
@@ -539,27 +593,31 @@ const FX = (() => {
   return { resize, startSummon, finishSummon, cancelSummon, setAmbient, stop, burst, burstAt, kick, centerOf, get summoning() { return !!S; } };
 })();
 
-function flashEl(strength) {
+function flashEl(strength, bg) {
   const f = $('#flash');
   f.classList.remove('go'); void f.offsetWidth;
+  f.style.background = bg || '';
   f.style.setProperty('opacity', strength);
   f.classList.add('go');
 }
 
 /* ================= 抽卡逻辑 ================= */
+// 两个卡池使用相同的可调概率规则，各自累计五星与四星保底。
 function rollOne() {
-  state.pity5++; state.pity4++; state.total++;
+  const P5 = pool.pity5, P4 = pool.pity4, TOT = pool.total;
+  state[P5]++; state[P4]++; state[TOT]++;
   let r;
-  if (state.pity5 >= state.hardPity || Math.random() < rate5(state.pity5)) r = 5;
-  else if (state.pity4 >= PITY4 || Math.random() < RATE4) r = 4;
+  if (state[P5] >= state.hardPity || Math.random() < rate5(state[P5])) r = 5;
+  else if (state[P4] >= PITY4 || Math.random() < RATE4) r = 4;
   else r = 3;
-  if (r === 5) { state.pity5 = 0; state.pity4 = 0; }
-  else if (r === 4) state.pity4 = 0;
-  const pool = BY_R[r];
-  const c = pool[Math.floor(Math.random() * pool.length)];
+  if (r === 5) { state[P5] = 0; state[P4] = 0; }
+  else if (r === 4) state[P4] = 0;
+  const list = byR(pool.items, r);
+  const c = list[Math.floor(Math.random() * list.length)];
   const isNew = !state.owned[c.id];
   state.owned[c.id] = (state.owned[c.id] || 0) + 1;
-  state.history.unshift({ id: c.id, r, t: Date.now(), n: state.total });
+  // 角色池记录不带 p 字段，与旧存档保持一致；武器池记录 p: 'weapon'
+  state.history.unshift(pool.key === 'weapon' ? { id: c.id, r, t: Date.now(), n: state[TOT], p: 'weapon' } : { id: c.id, r, t: Date.now(), n: state[TOT] });
   if (state.history.length > 500) state.history.length = 500;
   return { ...c, isNew };
 }
@@ -567,8 +625,6 @@ function rollOne() {
 let busy = false;
 function tryPull(n) {
   if (busy) return;
-  if (n !== 1 && n !== 10) return;
-  showView('gacha');
   if (state.whale >= n) return doPull(n);
   const lack = n - state.whale, cost = lack * RICE_PER_WHALE;
   if (state.rice >= cost) {
@@ -590,7 +646,7 @@ function doPull(n) {
   results = Array.from({ length: n }, rollOne);
   save(); renderHud();
   // 预加载立绘
-  results.forEach(c => { const i = new Image(); i.src = charSrc(c.id); });
+  results.forEach(c => { const i = new Image(); i.src = itemSrc(c); });
   $('#fx').classList.add('on');
   $('#reveal').classList.remove('on'); $('#summary').classList.remove('on');
   $('#skip').style.display = '';
@@ -601,13 +657,13 @@ function doPull(n) {
 function showReveal() {
   phase = 'reveal';
   const c = results[idx], rv = $('#reveal');
-  rv.className = 'on r' + c.r;
+  rv.className = 'on r' + c.r + (c.kind === 'weapon' ? ' wp' : '');
   rv.style.setProperty('--rc', RC[c.r]);
   const d1 = c.r === 5 ? 1.3 : c.r === 4 ? .6 : .45;
   rv.style.setProperty('--d1', d1 + 's');
   const ch = rv.querySelector('.char');
   ch.classList.remove('idle');
-  ch.src = charSrc(c.id);
+  ch.src = itemSrc(c);
   // 名字逐字落下
   const nm = rv.querySelector('.nm'); nm.innerHTML = '';
   [...c.name].forEach((t, i) => { const s = document.createElement('span'); s.textContent = t; s.style.animationDelay = (d1 + i * .07) + 's'; nm.appendChild(s); });
@@ -616,7 +672,7 @@ function showReveal() {
   rv.querySelector('.new').style.display = c.isNew ? '' : 'none';
   rv.querySelector('.count').textContent = results.length > 1 ? `${idx + 1} / ${results.length}` : '';
   // 背景巨字
-  const word = (c.id === 'ds' ? 'DEEPSEA' : c.id.toUpperCase()) + ' ✦ ';
+  const word = (c.id === 'ds' ? 'DEEPSEA' : c.id === 'whalefall' ? 'WHALE FALL' : c.id.toUpperCase()) + ' ✦ ';
   rv.querySelectorAll('.bgtext span').forEach(s => { s.textContent = word.repeat(8); });
   const st = rv.querySelector('.stars'); st.innerHTML = '';
   const base = c.r === 5 ? 1.25 : d1 - .05;
@@ -670,8 +726,8 @@ function showSummary() {
   results.forEach((c, i) => {
     const w = document.createElement('div'); w.className = 'cardwrap r' + c.r;
     const delay = .15 + i * .09;
-    w.innerHTML = `<div class="card r${c.r}" style="--rc:${RC[c.r]};animation-delay:${delay}s">
-      <img src="${charSrc(c.id)}" alt=""><div class="cs">${'★'.repeat(c.r)}</div><div class="cn">${c.name}</div></div>`;
+    w.innerHTML = `<div class="card r${c.r}${c.kind === 'weapon' ? ' wp' : ''}" style="--rc:${RC[c.r]};animation-delay:${delay}s">
+      <img src="${itemSrc(c)}" alt=""><div class="cs">${'★'.repeat(c.r)}</div><div class="cn">${c.name}</div></div>`;
     box.appendChild(w);
     // 卡片翻开时：高星级迸光
     setTimeout(() => {
@@ -700,8 +756,8 @@ function closeFx() {
   FX.stop();
   $('#fx').classList.remove('on');
   $('#reveal').className = ''; $('#summary').classList.remove('on');
-  const got5 = results.some(c => c.r === 5);
-  if (got5) toast('恭喜获得 5★ DS娘！深海的金光为你而亮');
+  const got5 = results.find(c => c.r === 5);
+  if (got5) toast(`恭喜获得 5★ ${got5.name}！深海的金光为你而亮`);
 }
 
 /* ================= HUD ================= */
@@ -709,42 +765,48 @@ let shown = { rice: state.rice, whale: state.whale };
 function renderHud(bump) {
   animNum('#riceNum, #gachaRiceNum', 'rice', bump);
   animNum('#whaleNum, #gachaWhaleNum', 'whale', bump);
-  $('#pity').innerHTML = `已求索 <b>${state.total}</b> 次　下一抽出金概率 <b>${pct(rate5(state.pity5 + 1))}</b>　距保底 <b>${Math.max(1, state.hardPity - state.pity5)}</b> 次`;
-  $('#gachaHardPity').textContent = state.hardPity;
-  $('#gachaHardPity').style.fontSize = `calc(${40 * Math.min(1, 3 / String(state.hardPity).length)} * var(--u))`;
-  $('#homeCollection').textContent = `${CHARS.filter(c => state.owned[c.id]).length} / ${CHARS.length}`;
-  if (currentView === 'inventory') renderInventory();
+  $('#pity').innerHTML = `${pool.noun}池已求索 <b>${state[pool.total]}</b> 次　下一抽出金概率 <b>${pct(rate5(state[pool.pity5] + 1))}</b>　距保底 <b>${Math.max(1, state.hardPity - state[pool.pity5])}</b> 次`;
+  document.querySelectorAll('.gacha-pity-number').forEach(el => {
+    el.textContent = state.hardPity;
+    el.style.fontSize = `calc(${40 * Math.min(1, 3 / String(state.hardPity).length)} * var(--u))`;
+  });
+  if (currentView !== 'gacha') renderInventory();
 }
 
-/* ================= 大厅与角色仓库 ================= */
+/* ================= 角色仓库与武器仓库 ================= */
 function showView(view) {
-  if (busy || !['home', 'gacha', 'inventory'].includes(view)) return;
+  if (busy || !['gacha', 'characters', 'weapons'].includes(view)) return;
   closeModal();
   currentView = view;
   stage.dataset.view = view;
-  for (const name of ['home', 'gacha', 'inventory']) $('#' + name + 'View').hidden = name !== view;
+  for (const name of ['gacha', 'characters', 'weapons']) $('#' + name + 'View').hidden = name !== view;
   document.querySelectorAll('.main-nav [data-view]').forEach(b => {
     const active = b.dataset.view === view;
     b.classList.toggle('active', active);
     if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
+  document.title = view === 'gacha' ? `${pool.banner} · ${pool.tab}` : `${view === 'weapons' ? '武器' : '角色'}仓库 · 深海的嘟囔`;
   fit();
-  if (view === 'inventory') renderInventory();
+  if (view !== 'gacha') renderInventory();
 }
 function renderInventory() {
-  const owned = CHARS.filter(c => state.owned[c.id]);
-  $('#collectionTotal').textContent = `${owned.length} / ${CHARS.length}`;
-  document.querySelectorAll('[data-act="inventory-mode"]').forEach(b => {
-    const active = b.dataset.mode === inventoryMode;
+  if (currentView === 'gacha') return;
+  const root = $('#' + currentView + 'View'), filter = inventoryFilters[currentView];
+  const items = currentView === 'weapons' ? WEAPONS : CHARS, noun = currentView === 'weapons' ? '武器' : '角色';
+  const owned = items.filter(c => state.owned[c.id]);
+  root.querySelector('.collection-total').textContent = `${owned.length} / ${items.length}`;
+  root.querySelectorAll('[data-act="inventory-mode"]').forEach(b => {
+    const active = b.dataset.mode === filter.mode;
     b.classList.toggle('active', active); b.setAttribute('aria-pressed', active);
   });
-  const cards = CHARS.filter(c => (inventoryMode === 'all' || state.owned[c.id]) && (!inventoryRarity || c.r === inventoryRarity)).sort((a, b) => b.r - a.r);
-  $('#inventoryGrid').innerHTML = cards.length ? cards.map(c => {
+  root.querySelector('.inventory-rarity').value = filter.rarity;
+  const cards = items.filter(c => (filter.mode === 'all' || state.owned[c.id]) && (!filter.rarity || c.r === filter.rarity)).sort((a, b) => b.r - a.r);
+  root.querySelector('.inventory-grid').innerHTML = cards.length ? cards.map(c => {
     const count = state.owned[c.id] || 0;
-    return `<button class="collection-card${count ? '' : ' locked'}" style="--rc:${RC[c.r]}" data-act="owned-detail" data-id="${c.id}" aria-label="${c.name}，${c.r} 星，${count ? '持有 ' + count + ' 名' : '尚未获得'}">
-      <span class="portrait"><img src="${charSrc(c.id)}" alt="" loading="lazy"></span><span class="owned-count">${count ? '持有 ×' + count : '未获得'}</span>
-      <span class="collection-info"><span class="stars-s">${'★'.repeat(c.r)}</span><strong>${c.name}</strong></span></button>`;
-  }).join('') : `<div class="inventory-empty"><span>◇</span><h2>${owned.length ? '还没有这个星级的伙伴' : '相遇的故事，正要开始'}</h2><p>${owned.length ? '试试其他星级，或前往求索。' : '通过求索获得的角色会自动收入仓库。'}</p><button data-act="navigate" data-view="gacha">前往求索 ↗</button></div>`;
+    return `<button class="collection-card${count ? '' : ' locked'}" style="--rc:${RC[c.r]}" data-act="owned-detail" data-id="${c.id}" aria-label="${c.name}，${c.r} 星，${count ? '持有 ' + count : '尚未获得'}">
+      <span class="portrait"><img src="${itemSrc(c)}" alt="" loading="lazy"></span><span class="owned-count">${count ? '持有 ×' + count : '未获得'}</span>
+      <span class="collection-info"><span class="stars-s">${'★'.repeat(c.r)}</span><strong>${c.name}</strong>${c.kind === 'weapon' ? `<small>${c.type}</small>` : ''}</span></button>`;
+  }).join('') : `<div class="inventory-empty"><span>◇</span><h2>${owned.length ? '还没有这个星级的' + noun : '还没有获得' + noun}</h2><p>通过对应卡池求索获得的${noun}会自动收入这里。</p><button data-act="inventory-pull" data-pool="${currentView === 'weapons' ? 'weapon' : 'char'}">前往求索 ↗</button></div>`;
 }
 function animNum(sel, key, bump) {
   const els = document.querySelectorAll(sel), from = shown[key], to = state[key];
@@ -822,62 +884,68 @@ function updateEx() {
 }
 
 function openDetails() {
-  const pool = r => BY_R[r].map(c => `<div class="pc" style="--c:${r === 5 ? '#d9a63c' : r === 4 ? '#9b6ad6' : '#5c8fd6'}"><img src="${charSrc(c.id)}" alt=""><span>${c.name}</span></div>`).join('');
+  const P = pool, up = upOf(P), p4 = state[P.pity4], p5 = state[P.pity5];
+  const cells = r => byR(P.items, r).map(c => `<div class="pc${c.kind === 'weapon' ? ' wp' : ''}" style="--c:${r === 5 ? '#d9a63c' : r === 4 ? '#9b6ad6' : '#5c8fd6'}"><img src="${itemSrc(c)}" alt=""><span>${c.name}</span></div>`).join('');
   const stats = pityStats(state.hardPity);
-  openModal('深度思考 · 卡池详情', `
+  openModal(`深度思考 · ${P.tab}`, `
     <div class="sec">求索概率</div>
-    <table class="rate-table"><tr><th>星级</th><th>角色</th><th>概率</th></tr>
-      <tr><td class="stars-s">★★★★★</td><td>DS娘（UP）</td><td><b>基础 ${pct(RATE5_MIN)}，含保底 ${precisePct(stats.overall)}</b></td></tr>
-      <tr><td class="stars-s">★★★★</td><td>${BY_R[4].map(c => c.name).join('、')}</td><td>未出金时 ${pct(RATE4)}</td></tr>
-      <tr><td class="stars-s">★★★</td><td>${BY_R[3].map(c => c.name).join('、')}</td><td>其余</td></tr></table>
+    <table class="rate-table"><tr><th>星级</th><th>${P.noun}</th><th>概率</th></tr>
+      <tr><td class="stars-s">★★★★★</td><td>${up.name}（UP）</td><td><b>基础 ${pct(RATE5_MIN)}，含保底 ${precisePct(stats.overall)}</b></td></tr>
+      <tr><td class="stars-s">★★★★</td><td>${byR(P.items, 4).map(c => c.name).join('、')}</td><td>未出金时 ${pct(RATE4)}</td></tr>
+      <tr><td class="stars-s">★★★</td><td>${byR(P.items, 3).map(c => c.name).join('、')}</td><td>其余</td></tr></table>
     <div class="sec">出金概率递增</div>
     <div>· ${stats.soft ? `前 ${stats.soft} 抽固定 ${pct(RATE5_MIN)}，第 ${stats.soft + 1} 抽起线性递增` : '当前配置从第 1 抽起递增'}，第 ${state.hardPity} 抽达到 100%<br>
-      · 抽到 DS娘 后重新从第 1 抽开始计数<br>
-      · 下一抽出金概率：<b style="color:#b7811c">${pct(rate5(state.pity5 + 1))}</b>（已连续 ${state.pity5} 抽未出金）<br>
+      · 抽到 ${up.name} 后重新从第 1 抽开始计数<br>
+      · 下一抽出金概率：<b style="color:#b7811c">${pct(rate5(p5 + 1))}</b>（已连续 ${p5} 抽未出金）<br>
       · 理论平均 ${stats.mean.toFixed(4)} 抽获得一名 5 星；综合概率为平均抽数的倒数。有限抽数的个人结果会有波动。</div>
     ${probabilityChart(state.hardPity)}
     <div class="sec">保底规则</div>
-    <div>· 每 10 次求索必得 4 星或以上角色（当前已 ${state.pity4} 次未出 4 星+）<br>
-      · 至多 ${state.hardPity} 次求索必得 5 星 DS娘，可在设置中调整<br>
-      · 修改保底保留当前计数；已达到新上限时，下一抽必得 5 星<br>
+    <div>· 每 10 次求索必得 4 星或以上${P.noun}（当前已 ${p4} 次未出 4 星+）<br>
+      · 至多 ${state.hardPity} 次求索必得 5 星 ${up.name}，可在设置中调整<br>
+      · 两个卡池共用保底设置，分别计数、互不继承；武器没有属性数值<br>
+      · 修改保底保留两个池的当前计数；已达到新上限时，下一抽必得 5 星<br>
       · 1 次求索消耗 1 枚鲸币；鲸币不足时可用 ${RICE_PER_WHALE} 米饭兑换 1 枚</div>
     <div class="row"><button class="btn" data-act="settings">调整保底设置</button></div>
-    <div class="sec">5★ UP</div><div class="pool">${pool(5)}</div>
-    <div class="sec">4★</div><div class="pool">${pool(4)}</div>
-    <div class="sec">3★</div><div class="pool">${pool(3)}</div>`);
+    <div class="sec">5★ UP</div><div class="pool">${cells(5)}</div>
+    <div class="sec">4★</div><div class="pool">${cells(4)}</div>
+    <div class="sec">3★</div><div class="pool">${cells(3)}</div>`);
 }
 
+// 旧记录没有 p 字段，一律视为角色池
+const histPool = h => POOLS[h.p] || POOLS.char;
 function openHistory() {
   const rows = state.history.map(h => {
-    const c = CHARS.find(x => x.id === h.id) || { name: h.id };
+    const P = histPool(h), c = P.items.find(x => x.id === h.id) || { name: h.id };
     const d = new Date(h.t), p = v => String(v).padStart(2, '0');
-    return `<tr class="r${h.r}"><td>${h.n || ''}</td><td>${c.name}</td><td class="stars-s">${'★'.repeat(h.r)}</td><td>${BANNER}</td>
+    return `<tr class="r${h.r}"><td>${h.n || ''}</td><td>${c.name}</td><td class="stars-s">${'★'.repeat(h.r)}</td><td>${P.banner}</td>
       <td>${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}</td></tr>`;
   }).join('');
-  const n5 = state.owned.ds || 0;
-  openModal('摸鱼记录', state.history.length
-    ? `<div style="text-align:center;margin-bottom:calc(14*var(--u))">累计求索 <b>${state.total}</b> 次 · 获得 5★ DS娘 <b style="color:#b7811c">${n5}</b> 次</div>
-       <table class="hist"><tr><th>第几抽</th><th>角色</th><th>星级</th><th>卡池</th><th>时间</th></tr>${rows}</table>`
-    : '<div class="empty">还没有求索记录，去深海里捞一捞吧～</div>');
+  const n5 = key => state.owned[POOLS[key].up] || 0;
+  openModal('摸鱼记录', `<div class="row"><button class="btn" data-act="navigate" data-view="characters">角色仓库</button><button class="btn" data-act="navigate" data-view="weapons">武器仓库</button></div>` + (state.history.length
+    ? `<div style="text-align:center;margin-bottom:calc(14*var(--u))">角色池求索 <b>${state.total}</b> 次 · 获得 5★ DS娘 <b style="color:#b7811c">${n5('char')}</b> 次　｜　武器池求索 <b>${state.wtotal}</b> 次 · 获得 5★ 鲸落 <b style="color:#b7811c">${n5('weapon')}</b> 次</div>
+       <table class="hist"><tr><th>第几抽</th><th>名称</th><th>星级</th><th>卡池</th><th>时间</th></tr>${rows}</table>`
+    : '<div class="empty">还没有求索记录，去深海里捞一捞吧～</div>'));
 }
 
-function openPreview() {
-  openCharacter('ds');
-}
-function openCharacter(id) {
-  const c = CHARS.find(c => c.id === id);
+function openPreview() { openItem(upOf(pool).id); }
+function openItem(id) {
+  const c = ITEMS.find(c => c.id === id);
   if (!c) return;
-  const count = state.owned[c.id] || 0;
-  openModal('角色档案 · ' + c.name, `<div class="preview">
-      <div class="art"><img src="${charSrc(c.id)}" alt=""></div>
+  const isW = c.kind === 'weapon', owner = CHARS.find(o => o.id === c.owner), count = state.owned[c.id] || 0;
+  const tags = [count ? '已获得 · 持有 ×' + count : '尚未获得', ...(c.r === 5 ? ['限定 UP'] : []), ...(isW ? [c.type, owner ? owner.name + '专武' : '通用'] : [])];
+  const desc = c.id !== 'ds' && c.id !== 'whalefall' ? c.sub : isW
+    ? '以白瓷鲸骨为柄、鲸尾为勺的饭勺法杖，勺心托着一团会发光的米饭。传说鲸鱼沉入深海后会养活一整片海底——这把勺子也一样，盛出来的饭永远够吃。'
+    : '深海里长大的鲸鱼女仆，头上的鳍会随心情扇动。平时慢吞吞地嘟囔，一旦开始深度思考就停不下来——前提是先给她吃饱大白米饭。';
+  openModal((isW ? '武器档案 · ' : '角色档案 · ') + c.name, `<div class="preview${isW ? ' wp' : ''}">
+      <div class="art"><img src="${itemSrc(c)}" alt=""></div>
       <div class="txt">
         <div class="stars-s" style="font-size:calc(40*var(--u))">${'★'.repeat(c.r)}</div>
         <div class="nm">${c.name}</div>
-        <div style="margin:calc(10*var(--u)) 0 calc(20*var(--u))"><span class="tag">${count ? '已获得 · 持有 ×' + count : '尚未获得'}</span>${c.r === 5 ? '<span class="tag">限定 UP</span>' : ''}</div>
-        <div>称号：${c.sub}</div>
-        ${c.id === 'ds' ? '<div style="margin-top:calc(16*var(--u))">深海里长大的鲸鱼女仆，头上的鳍会随心情扇动。平时慢吞吞地嘟囔，一旦开始深度思考就停不下来，前提是先给她吃饱大白米饭。</div>' : ''}
+        <div style="margin:calc(10*var(--u)) 0 calc(20*var(--u))">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        <div>${isW ? '类型' : '称号'}：${c.sub}</div>
+        <div style="margin-top:calc(16*var(--u))">${desc}</div>
         <div style="margin-top:calc(16*var(--u));color:#8a6a2a">「${c.quote}」</div>
-        <div class="row" style="justify-content:flex-start"><button class="btn dark" data-act="pull-from-preview" data-n="10">立即求索 ×10</button></div>
+        <div class="row" style="justify-content:flex-start"><button class="btn dark" data-act="pull-from-preview" data-pool="${isW ? 'weapon' : 'char'}" data-n="10">立即求索 ×10</button></div>
       </div></div>`);
 }
 
@@ -899,15 +967,15 @@ function settingsPreview(n) {
     理论综合概率：<b>${precisePct(stats.overall)}</b> · 平均 <b>${stats.mean.toFixed(4)}</b> 抽 / 5★`;
 }
 function openSettings() {
-  openModal('观测站设置', `<div class="sec">五星保底</div>
+  openModal('设置', `<div class="sec">五星保底</div>
       <label class="settings-field" for="hardPity">保底抽数 <input id="hardPity" type="number" min="1" max="${MAX_PITY5}" step="1" value="${state.hardPity}" inputmode="numeric"> 抽</label>
       <div class="settings-preview" id="pityPreview" aria-live="polite">${settingsPreview(state.hardPity)}</div>
       <div class="settings-error" id="pityError" role="alert"></div>
       <div class="note">支持 1～10,000 的整数。前 floor(7N/9) 抽维持 0.08%，之后线性递增。综合概率随保底改变。</div>
-      <div class="note">保存后立即生效，保留当前 ${state.pity5} 抽计数。若计数已达到新保底，下一抽必得 5 星。</div>
+      <div class="note">保存后立即生效，角色池、武器池共用此设置，分别计数。保留当前角色池 ${state.pity5} 抽、武器池 ${state.wpity5} 抽计数。若计数已达到新保底，下一抽必得 5 星。</div>
       <div class="row"><button class="btn dark" data-act="apply-pity">保存保底设置</button></div>
       <div class="sec">声音与存档</div><div class="row"><button class="btn" data-act="toggle-sound">音效：${state.sound ? '开' : '关'}</button><button class="btn danger-button" data-act="reset">重置存档</button></div>
-      <div class="note">角色、持有数量、货币、保底设置和求索记录保存在本浏览器中。</div>`, true);
+      <div class="note">角色、武器、持有数量、货币、保底设置和求索记录保存在本浏览器中。</div>`, true);
 }
 function previewPityInput() {
   const n = Number($('#hardPity').value), valid = validPity(n);
@@ -929,10 +997,11 @@ document.addEventListener('click', e => {
   const act = b.dataset.act;
   switch (act) {
     case 'navigate': showView(b.dataset.view); break;
-    case 'inventory-mode': inventoryMode = b.dataset.mode === 'all' ? 'all' : 'owned'; renderInventory(); break;
-    case 'owned-detail': openCharacter(b.dataset.id); break;
+    case 'inventory-mode': inventoryFilters[currentView].mode = b.dataset.mode === 'all' ? 'all' : 'owned'; renderInventory(); break;
+    case 'owned-detail': openItem(b.dataset.id); break;
+    case 'inventory-pull': switchPool(b.dataset.pool); showView('gacha'); break;
     case 'pull': tryPull(+b.dataset.n); break;
-    case 'pull-from-preview': tryPull(+b.dataset.n); break;
+    case 'pull-from-preview': switchPool(b.dataset.pool); showView('gacha'); tryPull(+b.dataset.n); break;
     case 'shop-rice': openShop('rice'); break;
     case 'shop-whale': openShop('whale'); break;
     case 'shop-tab': openShop(b.dataset.tab); break;
@@ -950,10 +1019,12 @@ document.addEventListener('click', e => {
       state.rice -= cost; state.whale += exQty; save(); renderHud(true); SFX.coin();
       toast(`兑换成功，获得 ${exQty} 枚鲸币`); closeModal(); break;
     }
-    case 'tab':
-      if (b.dataset.tab === '0') toast('当前卡池：角色活动求索 · 深海的嘟囔');
+    case 'tab': {
+      const key = { 0: 'char', 3: 'weapon' }[b.dataset.tab];
+      if (key) switchPool(key);
       else toast(`「${b.title}」卡池筹备中，敬请期待`);
       break;
+    }
     case 'details': openDetails(); break;
     case 'history': openHistory(); break;
     case 'preview': openPreview(); break;
@@ -966,11 +1037,11 @@ document.addEventListener('click', e => {
       break;
     case 'toggle-sound': state.sound = !state.sound; save(); openSettings(); break;
     case 'reset':
-      confirmBox('重置存档', '将清空角色仓库、米饭、鲸币和求索记录，保底恢复为 90 抽，确定吗？', '确定重置', () => {
+      confirmBox('重置存档', '将清空角色、武器、货币、两个卡池的计数和求索记录，保底恢复为 90 抽，确定吗？', '确定重置', () => {
         try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-        Object.assign(state, { rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, history: [], owned: {}, hardPity: DEFAULT_PITY5 });
+        Object.assign(state, { ...SAVE_DEFAULTS, sound: state.sound, pool: pool.key, history: [], owned: {} });
         Object.keys(state).filter(k => k.startsWith('first')).forEach(k => delete state[k]);
-        save(); renderHud(); showView('home'); toast('存档已重置');
+        save(); renderHud(); toast('存档已重置');
       });
       break;
     case 'modal-close': closeModal(); break;
@@ -985,7 +1056,7 @@ document.addEventListener('input', e => {
   if (e.target.id === 'hardPity') previewPityInput();
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'inventoryRarity') { inventoryRarity = Number(e.target.value); renderInventory(); }
+  if (e.target.matches('.inventory-rarity') && currentView !== 'gacha') { inventoryFilters[currentView].rarity = Number(e.target.value); renderInventory(); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if ($('#mask').classList.contains('open')) closeModal(); else if (phase !== 'idle') skip(); }
@@ -1015,8 +1086,48 @@ stage.addEventListener('pointerdown', e => {
   spawnRipple(e.clientX - r.left, e.clientY - r.top);
 }, true);
 
+/* ================= 卡池切换 ================= */
+// 先按原图尺寸拼合各图层，再整体缩放，避免切片边缘各自重采样产生接缝。
+async function prepareWeaponUI() {
+  const scene = $('.weapon-scene'), output = scene.querySelector('.weapon-composite');
+  const layers = [...scene.querySelectorAll('[data-layer]')];
+  try {
+    await Promise.all(layers.map(layer => layer.decode()));
+    const canvas = document.createElement('canvas');
+    canvas.width = 2048; canvas.height = 1152;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    layers.forEach(layer => ctx.drawImage(layer, +layer.dataset.x, +layer.dataset.y));
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    try {
+      output.src = url;
+      await output.decode();
+      scene.classList.add('ready');
+    } finally { URL.revokeObjectURL(url); }
+  } catch (e) { /* 图层未就绪时继续使用同一张原图，保证页面可用。 */ }
+}
+function applyPool() {
+  stage.classList.toggle('pool-weapon', pool.key === 'weapon');
+  $('#gachaView').setAttribute('aria-label', pool.tab);
+  $('#gachaView h1').textContent = pool.tab;
+  if (currentView === 'gacha') document.title = `${pool.banner} · ${pool.tab}`;
+  document.querySelectorAll('#gachaView [data-act="preview"]').forEach(b => { b.title = `查看 UP ${pool.noun}`; b.setAttribute('aria-label', b.title); });
+  renderHud();
+}
+function switchPool(key) {
+  if (busy || !Object.hasOwn(POOLS, key)) return;
+  if (pool.key === key) { toast(`当前卡池：${pool.tab} · ${pool.banner}`); return; }
+  pool = POOLS[key]; state.pool = key; save();
+  applyPool();
+  SFX.whoosh();
+  toast(`已切换到「${pool.tab} · ${pool.banner}」`);
+}
+
 addEventListener('resize', fit);
 fit();
-renderHud();
+applyPool();
+prepareWeaponUI();
 // 预加载
-CHARS.forEach(c => { const i = new Image(); i.src = charSrc(c.id); });
+[...CHARS, ...WEAPONS].forEach(c => { const i = new Image(); i.src = itemSrc(c); });

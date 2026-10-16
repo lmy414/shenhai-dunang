@@ -14,7 +14,7 @@
 .scene-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--gold-hi); outline-offset: 3px; }
 .game-header { position: absolute; top: calc(10 * var(--u)); left: calc(28 * var(--u)); right: calc(22 * var(--u)); z-index: 5; display: flex; align-items: center; justify-content: space-between; }
-.brand, .resource, .icon-button, .lobby-character, .summon-entry, .collection-entry, .main-nav button, .footer-tools button { position: relative; background: none; border: 0; margin: 0; padding: 0; cursor: pointer; color: var(--navy); font-family: var(--serif); }
+.brand, .resource, .icon-button, .main-nav button, .footer-tools button { position: relative; background: none; border: 0; margin: 0; padding: 0; cursor: pointer; color: var(--navy); font-family: var(--serif); }
 .brand { display: flex; align-items: center; gap: calc(14 * var(--u)); color: white; font-size: calc(28 * var(--u)); text-shadow: 0 2px 5px #173355; }
 .brand > img { width: calc(66 * var(--u)); height: calc(66 * var(--u)); }
 .resources { display: flex; align-items: center; gap: calc(14 * var(--u)); }
@@ -23,23 +23,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .resource > span { position: absolute; left: 31%; top: 18%; width: 47%; height: 61%; display: flex; align-items: center; justify-content: center; background: url(assets/ui/resource-fill.png) center / 100% 100%; font: 600 calc(32 * var(--u)) var(--serif); font-variant-numeric: tabular-nums; }
 .icon-button { width: calc(80 * var(--u)); height: calc(80 * var(--u)); }
 .game-view { position: absolute; inset: 0; }
-.home-heading { position: absolute; top: 16%; left: 5%; width: 43%; }
-.home-heading > img { width: 100%; display: block; }
-.home-heading h1 { position: absolute; top: 21%; left: 22%; width: 40%; margin: 0; text-align: center; color: var(--navy); font: 700 calc(29 * var(--u))/1.4 var(--serif); letter-spacing: calc(3 * var(--u)); }
 .original-capsule, .inventory-tabs button, .inventory-toolbar select, .inventory-empty button { background: url(assets/ui/capsule-frame.png) center / 100% 100% no-repeat; color: var(--navy); border: 0; font-family: var(--serif); }
-.home-heading p { margin: calc(30 * var(--u)) 0 0 calc(30 * var(--u)); height: calc(80 * var(--u)); display: flex; align-items: center; justify-content: center; font: 600 calc(26 * var(--u)) var(--serif); }
-.lobby-character { position: absolute; left: 32%; bottom: 13%; width: 43%; height: 66%; }
-.lobby-character img { height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 8px 12px #1d355e55); }
-.character-caption { position: absolute; left: 5%; top: 63%; width: 26%; }
-.character-caption img { width: 100%; }
-.home-menu { position: absolute; right: 6%; top: 17%; width: 20%; display: flex; flex-direction: column; gap: calc(28 * var(--u)); }
-.summon-entry { width: 100%; }
-.summon-entry img { width: 100%; display: block; }
-.collection-entry { aspect-ratio: 245 / 169; width: 100%; }
-.collection-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
-.collection-symbol { position: absolute; width: 46%; height: 66%; top: 6%; left: 27%; object-fit: contain; }
-.collection-entry strong { position: absolute; bottom: 7%; left: 0; right: 0; font: 700 calc(35 * var(--u)) var(--serif); }
-.collection-entry > span { position: absolute; top: 8%; right: 6%; font-size: calc(22 * var(--u)); }
 .game-footer { position: absolute; bottom: calc(20 * var(--u)); left: calc(34 * var(--u)); right: calc(40 * var(--u)); z-index: 5; display: flex; align-items: flex-end; gap: calc(30 * var(--u)); pointer-events: none; }
 .main-nav, .footer-tools { display: flex; align-items: flex-end; gap: calc(28 * var(--u)); pointer-events: auto; }
 .main-nav button, .footer-tools button { width: calc(125 * var(--u)); display: flex; flex-direction: column; align-items: center; gap: calc(7 * var(--u)); }
@@ -77,9 +61,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .probability-chart { width: 100%; display: block; height: auto; }
 .resource .bump { animation: bump .5s ease; }
 @media (hover: hover) {
-  .summon-entry:hover, .collection-entry:hover:hover:hover, .collection-card:hover { filter: brightness(1.1) drop-shadow(0 0 6px #ffe8b3); }
+  .collection-card:hover { filter: brightness(1.1) drop-shadow(0 0 6px #ffe8b3); }
 }
-/* 求索页直接使用原始合成图和原坐标热区，避免重建图层造成视觉偏差。 */
+/* 角色页保留原始合成图；武器页按原坐标重组图层，两者共用原热区。 */
 [data-view="gacha"] > .game-header, [data-view="gacha"] > .game-footer { display: none; }
 [data-view="gacha"] .gacha-view { --u: inherit; }
 .gacha-original-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
@@ -472,14 +456,6 @@ button { font-family: inherit; }
   .resource { width: 104px; height: 31px; }
   .resource > span { font-size: 15px; }
   .icon-button { width: 34px; height: 34px; }
-  .home-heading { top: 11%; left: 3%; width: 91%; }
-  .home-heading h1 { font-size: 16px; }
-  .home-heading p { font-size: 13px; height: 38px; margin: 13px 0 0 12px; }
-  .lobby-character { top: 34%; bottom: auto; left: 22%; width: 65%; height: 38%; }
-  .character-caption { top: 47%; left: 3%; width: 36%; }
-  .home-menu { top: auto; bottom: 107px; left: 20px; right: 20px; width: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
-  .collection-entry strong { font-size: 21px; }
-  .collection-entry > span { font-size: 12px; }
   .game-footer { left: 10px; right: 10px; bottom: 12px; gap: 0; }
   .main-nav { flex: 4; justify-content: space-around; gap: 0; }
   .footer-tools { flex: 2; justify-content: space-around; gap: 0; }
@@ -508,12 +484,37 @@ button { font-family: inherit; }
   .inventory-empty button { min-height: 44px; font-size: 16px; padding: 12px 35px; }
 }
 @media (max-width: 700px) and (max-height: 700px) and (orientation: portrait) {
-  .home-heading { top: 13%; width: 87%; }
-  .home-heading p { height: 31px; margin-top: 8px; font-size: 11px; }
-  .lobby-character { top: 39%; height: 26%; }
-  .character-caption { top: 44%; }
-  .home-menu { bottom: 102px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* 武器页面由原图矩形图层重组；保留对方的武器浮动展示与尺寸。 */
+.weapon-scene, .weapon-plate { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.weapon-composite { display: none; }
+.weapon-scene.ready .weapon-composite { display: block; }
+.weapon-scene.ready .weapon-fallback { display: none; }
+.weapon-scene { opacity: 0; transition: opacity .4s ease; }
+.pity-weapon { display: none; }
+#stage.pool-weapon .weapon-scene { opacity: 1; }
+#stage.pool-weapon .pity-weapon { display: flex; }
+#stage.pool-weapon .pity-character { display: none; }
+.pity-weapon { background-image: url(assets/ui/weapon/pity-fill.png); }
+.showcase { border: 0; padding: 0; background: none; cursor: pointer; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(calc(30 * var(--u))); transition: opacity .45s ease, transform .45s ease, visibility .45s; filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(150, 205, 255, .9)) drop-shadow(0 0 calc(40 * var(--u)) rgba(255, 214, 120, .45)); }
+.showcase img { width: 100%; height: 100%; object-fit: contain; }
+#stage.pool-weapon .showcase { opacity: 1; visibility: visible; pointer-events: auto; transform: none; animation: showcaseFloat 4.2s ease-in-out .45s infinite; }
+@keyframes showcaseFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(calc(-18 * var(--u))) rotate(1.5deg); } }
+.warehouse-entry { border: 0; padding: 0; background: none; cursor: pointer; color: white; display: flex; flex-direction: column; align-items: center; gap: calc(8 * var(--u)); }
+.warehouse-entry img { width: calc(120 * var(--u)); height: calc(120 * var(--u)); object-fit: contain; }
+.warehouse-entry span { font: 700 calc(29 * var(--u))/1.3 var(--serif); white-space: nowrap; text-shadow: 0 2px 4px #0a203b; }
+.warehouse-entry:hover { filter: brightness(1.13) drop-shadow(0 0 6px #ffe2a4); }
+.collection-info small { font: calc(18 * var(--u)) var(--sans); }
+#reveal.wp .char { height: calc(760 * var(--u)); bottom: calc(170 * var(--u)); }
+.card.wp img { top: 46%; height: calc(470 * var(--u)); width: 150%; object-fit: contain; transform: translate(-50%, -50%); }
+.pool .pc.wp img { height: 70%; max-width: 88%; object-fit: contain; bottom: calc(46 * var(--u)); }
+.preview.wp .art img { max-height: 92%; }
+@media (max-width: 700px) and (orientation: portrait) {
+  #stage[data-view="gacha"] .mask { position: fixed; width: 100vw; height: 100dvh; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  #stage[data-view="gacha"]:has(.mask.open) { overflow: visible; }
+  .collection-info small { font-size: 12px; }
 }

@@ -77,7 +77,7 @@ for name, box in [("resource-rice.png", (1410, 15, 1675, 90)), ("resource-whale.
     rd.ellipse((resource.width - 63, 3, resource.width - 1, 66), fill=255)
     resource.putalpha(alpha)
     resource.save(OUT / name)
-SOURCE.crop((1485, 36, 1500, 61)).save(OUT / "resource-fill.png")
+SOURCE.crop((1510, 36, 1520, 61)).save(OUT / "resource-fill.png")
 # 只清除金色 350 字形，周围纸面逐像素保留，避免矩形贴片边缘。
 pity_fill = SOURCE.crop((421, 558, 487, 604))
 digits = Image.new("L", pity_fill.size)

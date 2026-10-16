@@ -50,13 +50,16 @@
 
 - 这是原生 HTML、CSS 和 JavaScript 静态项目，没有框架、包管理清单或后端服务。
 - `index.html` 管理页面结构和 `data-act` 热区；`style.css` 管理样式；`app.js` 管理角色、抽卡、存档、音效和演出。
-- 抽卡页直接使用 `assets/bg.jpg` 与原热区，始终按 2000 × 1125 坐标系和 16∶9 比例缩放，不重排页面或替换背景。大厅、仓库在手机竖屏使用全屏排布。
-- 大厅、求索与仓库共用资源栏和存档。视觉复用原图切片 `assets/ui/`，裁切脚本为 `tools/slice_ui.py`；保持原图 UI 风格。
+- 抽卡页直接使用 `assets/bg.jpg` 与原热区，始终按 2000 × 1125 坐标系和 16∶9 比例缩放，不重排页面或替换背景。角色仓库与武器仓库在手机竖屏使用全屏排布。
+- 默认进入求索页，暂时移除大厅；底部独立进入角色仓库和武器仓库。共用资源栏和存档，保持原图 UI 风格。
+- 角色 UI 切片位于 `assets/ui/`，脚本为 `tools/slice_ui.py`。武器 UI 从 `assets/bg_weapon.jpg` 按原坐标拆到 `assets/ui/weapon/`，脚本为 `tools/slice_weapon_ui.py`；图层清单为 `layers.json`。页面先按原尺寸拼合，再整体缩放，无动态文字时须与原图一致。
 - `CHARS` 是角色数据入口，`assets/chars/<id>.png` 必须与角色 id 对应。
+- `WEAPON_DATA` 是武器数据入口，`assets/weapons/<key>.png` 必须与武器 key 对应。武器条目用 `key` 字段，不要写 `id: '…'`：发布工作流会把 `app.js` 里所有 `id: '…'` 当作角色 id 去 `assets/chars/` 检查。
+- `POOLS` 定义角色池和武器池。两个卡池共用鲸币，保底计数分别存放在 `pity5`/`pity4`/`total` 与 `wpity5`/`wpity4`/`wtotal`。
 - 特效使用 `FX` 和 Canvas，音效使用 `SFX` 和 Web Audio。优先复用现有模块及事件分发。
 - 存档键为 `ww-gacha-ds-v1`。修改键名、字段或初始值前，说明对已有存档的影响，必要时设计兼容或迁移。
-- `hardPity` 为玩家设置的五星保底，缺失时默认 90。`owned` 是累计持有数量，不能用最多 500 条的 `history` 替代。
-- 当前只有角色活动卡池实现了抽卡，其他活动入口仍是筹备提示；食堂为模拟支付。
+- `hardPity` 为两个池共用的玩家五星保底设置，缺失时默认 90。角色与武器分别累计计数，调整保底时均保留进度。`owned` 是累计持有数量，不能用最多 500 条的 `history` 替代。
+- 当前角色活动与武器活动两个卡池可以抽卡，饭点活动和摸鱼活动入口仍是筹备提示；食堂为模拟支付。
 
 保持现有技术方式。仅当任务确实需要编译、依赖或后端时，再引入对应流程，并同步文档与部署配置。
 
@@ -76,7 +79,7 @@
 
 ### 修改 JavaScript 或游戏规则
 
-先运行 `node --check app.js` 和 `node --test tests/gacha.test.cjs`。检查角色 id 与素材对应关系，确认 `index.html`、`app.js` 和 `style.css` 引用的文件存在。
+先运行 `node --check app.js` 和 `node --test tests/gacha.test.cjs`。检查角色 id、武器 key 与素材对应关系，确认 `index.html`、`app.js` 和 `style.css` 引用的文件存在。
 
 根据影响范围验证单抽、十连、跳过、再次求索、货币兑换、模拟支付、保底计数、历史记录和刷新后读档。修改概率时检查边界条件；模拟统计须说明样本和方法，不能把单次随机结果当作正确性证明。
 

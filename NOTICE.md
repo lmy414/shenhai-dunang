@@ -44,11 +44,13 @@
 | 文件范围 | 代码或文件中可确认的用途 | 来源与授权记录 |
 | --- | --- | --- |
 | `assets/bg.jpg`、`assets/bg_blur.jpg` | 抽卡页原始 UI 合成图、切片来源与模糊背景 | 待维护者补充作者、来源及授权范围 |
+| `assets/bg_weapon.jpg` | 武器池主界面背景 | 由维护者提供的背景图（与 `bg.jpg` 同源）用程序修改：重写标题、规则文字和徽章文字，左侧高亮框移到武器卡片；原图作者、来源及授权范围待维护者补充 |
+| `assets/weapons/*.png` | 12 件武器的展示图，文件名对应 `WEAPON_DATA` 中的 key | 维护者 2026-10-16 提供的四张武器图（每张三件，白底），经程序抠图为透明背景并缩放至最长边 900 像素；作者、来源及授权范围待维护者补充 |
 | `assets/chars/*.png` | 10 名角色的立绘，文件名对应 `CHARS` 中的 id | 待维护者逐项补充作者、来源及授权范围 |
 | `assets/icons/*.png` | 米饭、鲸币、鲸尾等界面图标 | 待维护者补充作者、来源及授权范围 |
-| `assets/app.png` | 大厅、仓库与导航使用的角色头像 | 待维护者补充作者、来源及授权范围 |
+| `assets/app.png` | 角色仓库入口与导航使用的角色头像 | 待维护者补充作者、来源及授权范围 |
 
-### 2026-10-16：原图分层与背景清理
+### 2026-10-16：角色原图分层与背景清理
 
 本次按维护者要求复用原图 UI。按钮、标题、活动卡片和资源栏均来自 `assets/bg.jpg`，没有另行设计一套按钮样式。角色立绘和图标继续使用仓库已有文件。
 
@@ -72,6 +74,19 @@ Use case: precise-object-edit. Edit target: the supplied original game screensho
 ```
 
 补绘保留原场景主题和主要构图，局部建筑与水面细节可能与原图不同。原始 `assets/bg.jpg` 保留，切片脚本始终读取原图。
+
+### 2026-10-16：武器 UI 分层与独立仓库
+
+沿用协作者对 `assets/bg_weapon.jpg` 和 12 件武器图的来源登记。原始文件保持不变，本次未新增生图或补绘场景。
+
+| 文件 | 来源与处理 | 作者、许可与使用范围 |
+| --- | --- | --- |
+| `assets/ui/weapon/background.png`、`title.png`、`rules.png`、`activity-*.png`、`resource-*.png`、`close.png`、`badge.png`、`shortcut-*.png`、`pull-*.png` | 从 `assets/bg_weapon.jpg` 按原坐标拆分背景层及 15 个矩形图层，保留图层内原始像素；拼合与解码后的原图逐像素一致 | 原图作者、来源及许可仍待确认；拆分不扩大授权范围 |
+| `assets/ui/weapon/pity-fill.png` | 仅清除金色 350 字形，以相邻无字纸面补齐，供 DOM 叠加当前保底数量 | 同武器 UI 原图 |
+| `assets/ui/weapon/layers.json` | 原图尺寸、图层坐标与保底数字区域清单 | 本项目生成的坐标记录 |
+| `assets/ui/resource-fill.png` | 将无字取样区域移离米饭图标边缘，修复仓库资源栏填字纹理中的图标残影 | 同角色 UI 原图 |
+
+拆分步骤见 `tools/slice_weapon_ui.py`，运行时会验证全部 2,359,296 个像素的拼合结果。底部仓库入口直接使用原有 `assets/app.png` 和 `assets/icons/spoon.png`，未另行绘制按钮。`assets/bg_clean.png` 现由两个仓库使用，原背景清理记录继续保留。
 
 当前音效由 `app.js` 中的 Web Audio 代码合成，仓库未包含独立音频文件。CSS 使用系统字体族，仓库未附带字体文件。
 
