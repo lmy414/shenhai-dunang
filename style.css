@@ -57,6 +57,14 @@ button { font-family: inherit; }
   background: linear-gradient(90deg, transparent, rgba(14, 32, 70, .55) 20%, rgba(14, 32, 70, .55) 80%, transparent);
   color: #fff; font-size: calc(21 * var(--u)); text-shadow: 0 0 calc(6 * var(--u)) rgba(10, 30, 70, .9), 0 0 calc(2 * var(--u)) #0a1e46;
 }
+/* 左下角制作者署名 */
+.credit {
+  display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; z-index: 1;
+  padding-left: calc(12 * var(--u)); border-left: calc(2 * var(--u)) solid rgba(243, 214, 139, .85);
+  color: #fff; font-size: calc(20 * var(--u)); line-height: 1.4; letter-spacing: calc(1 * var(--u));
+  text-shadow: 0 0 calc(5 * var(--u)) rgba(10, 30, 70, .95), 0 0 calc(2 * var(--u)) #0a1e46;
+}
+.credit .lbl { font-family: var(--serif); color: var(--gold-hi); letter-spacing: calc(4 * var(--u)); font-size: calc(18 * var(--u)); }
 .pity b { color: var(--gold-hi); font-weight: 600; }
 
 /* ---------- toast ---------- */
@@ -317,4 +325,39 @@ button { font-family: inherit; }
   10% { transform: translate(calc(-14 * var(--u)), calc(8 * var(--u))); } 25% { transform: translate(calc(12 * var(--u)), calc(-10 * var(--u))); }
   40% { transform: translate(calc(-9 * var(--u)), calc(6 * var(--u))); } 55% { transform: translate(calc(7 * var(--u)), calc(-4 * var(--u))); }
   75% { transform: translate(calc(-3 * var(--u)), calc(2 * var(--u))); } 100% { transform: none; }
+}
+
+/* ---------- 点击水纹 ---------- */
+.ripple { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 100; }
+.ripple i, .ripple b, .ripple s { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; }
+/* 三圈依次扩散的水波，带一点折射感 */
+.ripple i {
+  width: calc(180 * var(--u)); height: calc(180 * var(--u)); margin: calc(-90 * var(--u)) 0 0 calc(-90 * var(--u));
+  border: calc(3.5 * var(--u)) solid #fff;
+  /* 白圈外再描一道蓝边：浅色背景上也看得清 */
+  box-shadow: 0 0 0 calc(1.5 * var(--u)) rgba(40, 120, 220, .6), 0 0 calc(16 * var(--u)) rgba(70, 160, 255, .9),
+              inset 0 0 0 calc(1.5 * var(--u)) rgba(40, 120, 220, .45), inset 0 0 calc(16 * var(--u)) rgba(110, 190, 255, .7);
+  backdrop-filter: brightness(1.15) saturate(1.3) blur(1px); -webkit-backdrop-filter: brightness(1.15) saturate(1.3) blur(1px);
+  opacity: 0; animation: ripple 1s cubic-bezier(.15, .6, .3, 1) forwards;
+}
+.ripple i:nth-of-type(2) { animation-delay: .13s; border-width: calc(2.6 * var(--u)); }
+.ripple i:nth-of-type(3) { animation-delay: .26s; border-width: calc(1.8 * var(--u)); }
+@keyframes ripple { 0% { opacity: 1; transform: scale(.08); } 70% { opacity: .45; } 100% { opacity: 0; transform: scale(1.5); } }
+/* 落点的一下亮光 */
+.ripple b {
+  width: calc(46 * var(--u)); height: calc(46 * var(--u)); margin: calc(-23 * var(--u)) 0 0 calc(-23 * var(--u));
+  background: radial-gradient(closest-side, #fff, rgba(170, 220, 255, .7) 45%, rgba(170, 220, 255, 0));
+  animation: dropFlash .45s ease-out forwards;
+}
+@keyframes dropFlash { 0% { transform: scale(.3); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+/* 溅起的小水珠 */
+.ripple s {
+  width: calc(9 * var(--u)); height: calc(9 * var(--u)); margin: calc(-4.5 * var(--u)) 0 0 calc(-4.5 * var(--u));
+  background: radial-gradient(closest-side, #fff, rgba(120, 195, 255, .95) 60%, rgba(120, 195, 255, 0));
+  box-shadow: 0 0 calc(6 * var(--u)) rgba(60, 150, 255, .95);
+  opacity: 0; animation: splash .6s cubic-bezier(.2, .7, .4, 1) forwards;
+}
+@keyframes splash {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * var(--u)), calc((var(--dy) + 22) * var(--u))) scale(.35); }
 }

@@ -14,12 +14,15 @@ const CHARS = [
   { id: 'doubao',  name: '豆包娘',    sub: '红围巾',     r: 3, quote: '嘿！今天也要开开心心的！' },
 ];
 const BY_R = { 5: CHARS.filter(c => c.r === 5), 4: CHARS.filter(c => c.r === 4), 3: CHARS.filter(c => c.r === 3) };
-const RATE5 = 0.0001;    // DS娘：0.01%（万分之一）
+// DS娘 出金概率随“距上次出金的抽数”沿幂曲线递增：前期几乎不涨，后期陡升，第 PITY5 抽 100%
+// 起点 0.1%、指数 8.2 时平均约 200 抽出一次（起点若是 1%，平均最多只有约 97 抽）
+const RATE5_MIN = 0.001, RATE5_MAX = 1, RATE5_CURVE = 8.2;
 const RATE4 = 0.10;
 const PITY5 = 350;       // 至多 350 次必得 5 星
+const rate5 = n => Math.min(1, RATE5_MIN + (RATE5_MAX - RATE5_MIN) * Math.pow((Math.max(1, n) - 1) / (PITY5 - 1), RATE5_CURVE)); // n：本次是第几抽
 const PITY4 = 10;        // 每 10 次必得 4 星或以上
 const RICE_PER_WHALE = 160;
-const pct = x => +(x * 100).toFixed(4) + '%';
+const pct = x => +(x * 100).toFixed(x < .01 ? 3 : 2) + '%';
 const RC = { 3: '120,180,255', 4: '196,136,255', 5: '255,201,84' };
 const BANNER = '深海的嘟囔';
 const img = p => `assets/${p}`;
@@ -81,7 +84,8 @@ const SFX = (() => {
   }
   return {
     unlock: ctx,
-    click() { tone(880, 0, .08, 'triangle', .15); },
+    // 水滴声：快速下滑的正弦 + 一点高频泛音
+    click() { tone(1500, 0, .16, 'sine', .14, 380); tone(2700, .025, .07, 'sine', .04, 1600); },
     coin() { tone(1318, 0, .12, 'triangle', .2); tone(1760, .07, .25, 'triangle', .2); },
     // 开场俯冲：低频下坠 + 气流
     dive() { noise(0, 1.2, 3500, 300, .2, .9); tone(70, 0, 1.6, 'sine', .3, 45); },
@@ -517,10 +521,9 @@ function flashEl(strength) {
 /* ================= 抽卡逻辑 ================= */
 function rollOne() {
   state.pity5++; state.pity4++; state.total++;
-  const x = Math.random();
   let r;
-  if (state.pity5 >= PITY5 || x < RATE5) r = 5;
-  else if (state.pity4 >= PITY4 || x < RATE5 + RATE4) r = 4;
+  if (state.pity5 >= PITY5 || Math.random() < rate5(state.pity5)) r = 5;
+  else if (state.pity4 >= PITY4 || Math.random() < RATE4) r = 4;
   else r = 3;
   if (r === 5) { state.pity5 = 0; state.pity4 = 0; }
   else if (r === 4) state.pity4 = 0;
@@ -654,7 +657,10 @@ function showSummary() {
 }
 
 function skip() {
+  if (phase === 'idle') return;
   if (phase === 'summary') return closeFx();
+  // 单抽已经在展示角色了：再点跳过就直接结束，不要重新弹一次
+  if (phase === 'reveal' && results.length === 1) return closeFx();
   if (phase === 'summon') { FX.cancelSummon(); flashEl(.8); }
   if (results.length > 1) showSummary(); else { idx = 0; showReveal(); canTap = 0; }
 }
@@ -673,7 +679,7 @@ let shown = { rice: state.rice, whale: state.whale };
 function renderHud(bump) {
   animNum('#riceNum', 'rice', bump);
   animNum('#whaleNum', 'whale', bump);
-  $('#pity').innerHTML = `已求索 <b>${state.total}</b> 次　距 5★ 保底还有 <b>${PITY5 - state.pity5}</b> 次`;
+  $('#pity').innerHTML = `已求索 <b>${state.total}</b> 次　下一抽出金概率 <b>${pct(rate5(state.pity5 + 1))}</b>　距保底 <b>${PITY5 - state.pity5}</b> 次`;
 }
 function animNum(sel, key, bump) {
   const el = $(sel), from = shown[key], to = state[key];
@@ -754,10 +760,15 @@ function openDetails() {
   const pool = r => BY_R[r].map(c => `<div class="pc" style="--c:${r === 5 ? '#d9a63c' : r === 4 ? '#9b6ad6' : '#5c8fd6'}"><img src="${charSrc(c.id)}" alt=""><span>${c.name}</span></div>`).join('');
   openModal('深度思考 · 卡池详情', `
     <div class="sec">求索概率</div>
-    <table class="rate-table"><tr><th>星级</th><th>角色</th><th>基础概率</th></tr>
-      <tr><td class="stars-s">★★★★★</td><td>DS娘（UP）</td><td><b>${pct(RATE5)}</b></td></tr>
-      <tr><td class="stars-s">★★★★</td><td>${BY_R[4].map(c => c.name).join('、')}</td><td>${pct(RATE4)}</td></tr>
-      <tr><td class="stars-s">★★★</td><td>${BY_R[3].map(c => c.name).join('、')}</td><td>${pct(1 - RATE5 - RATE4)}</td></tr></table>
+    <table class="rate-table"><tr><th>星级</th><th>角色</th><th>概率</th></tr>
+      <tr><td class="stars-s">★★★★★</td><td>DS娘（UP）</td><td><b>${pct(RATE5_MIN)} 起，越抽越高</b></td></tr>
+      <tr><td class="stars-s">★★★★</td><td>${BY_R[4].map(c => c.name).join('、')}</td><td>未出金时 ${pct(RATE4)}</td></tr>
+      <tr><td class="stars-s">★★★</td><td>${BY_R[3].map(c => c.name).join('、')}</td><td>其余</td></tr></table>
+    <div class="sec">出金概率递增</div>
+    <div>· 距上次出金的第 1 抽为 ${pct(RATE5_MIN)}，前期涨得很慢，越往后涨得越快，第 ${PITY5} 抽达到 ${pct(RATE5_MAX)}<br>
+      · 参考：第 100 抽 ${pct(rate5(100))}，第 150 抽 ${pct(rate5(150))}，第 200 抽 ${pct(rate5(200))}，第 250 抽 ${pct(rate5(250))}，第 300 抽 ${pct(rate5(300))}<br>
+      · 抽到 DS娘 后重新从 ${pct(RATE5_MIN)} 开始<br>
+      · 下一抽出金概率：<b style="color:#b7811c">${pct(rate5(state.pity5 + 1))}</b>（已连续 ${state.pity5} 抽未出金）</div>
     <div class="sec">保底规则</div>
     <div>· 每 10 次求索必得 4 星或以上角色（当前已 ${state.pity4} 次未出 4 星+）<br>
       · 至多 ${PITY5} 次求索必得 5 星 DS娘（当前已 ${state.pity5} 次未出 5 星）<br>
@@ -813,7 +824,6 @@ document.addEventListener('click', e => {
     return;
   }
   const act = b.dataset.act;
-  if (act !== 'pull') SFX.click();
   switch (act) {
     case 'pull': tryPull(+b.dataset.n); break;
     case 'pull-from-preview': tryPull(+b.dataset.n); break;
@@ -857,12 +867,35 @@ document.addEventListener('click', e => {
     case 'again': closeFx(); tryPull(lastN); break;
   }
 });
-$('#skip').addEventListener('click', e => { e.stopPropagation(); SFX.click(); skip(); });
+$('#skip').addEventListener('click', e => { e.stopPropagation(); skip(); });
 document.addEventListener('input', e => { if (e.target.id === 'exQty') { exQty = parseInt(e.target.value, 10) || 1; updateEx(); } });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if ($('#mask').classList.contains('open')) closeModal(); else if (phase !== 'idle') skip(); }
   if ((e.key === ' ' || e.key === 'Enter') && phase === 'reveal') { e.preventDefault(); nextReveal(); }
 });
+
+/* ================= 点击水纹 ================= */
+function spawnRipple(x, y) {
+  const old = stage.querySelectorAll('.ripple');
+  if (old.length > 10) old[0].remove();
+  const d = document.createElement('div');
+  d.className = 'ripple';
+  d.style.left = x + 'px'; d.style.top = y + 'px';
+  let drops = '';
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + Math.random() * .6, dist = 40 + Math.random() * 45;
+    drops += `<s style="--dx:${(Math.cos(a) * dist).toFixed(1)};--dy:${(Math.sin(a) * dist).toFixed(1)};animation-delay:${(Math.random() * .06).toFixed(2)}s"></s>`;
+  }
+  d.innerHTML = '<b></b><i></i><i></i><i></i>' + drops;
+  stage.appendChild(d);
+  setTimeout(() => d.remove(), 1400);
+}
+stage.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  SFX.unlock(); SFX.click();
+  const r = stage.getBoundingClientRect();
+  spawnRipple(e.clientX - r.left, e.clientY - r.top);
+}, true);
 
 addEventListener('resize', fit);
 fit();
