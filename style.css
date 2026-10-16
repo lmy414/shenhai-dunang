@@ -22,6 +22,17 @@ button { font-family: inherit; }
   overflow: hidden; background: #0b1426; box-shadow: 0 0 60px rgba(0,0,0,.6);
 }
 #stage > .bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+/* 武器池背景叠在角色池背景上，切换卡池时淡入淡出 */
+#stage > .bg.wbg { opacity: 0; transition: opacity .4s ease; }
+#stage.pool-weapon > .bg.wbg { opacity: 1; }
+/* 武器池中央悬浮的 UP 武器 */
+.showcase {
+  object-fit: contain; cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(calc(30 * var(--u)));
+  filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(150, 205, 255, .9)) drop-shadow(0 0 calc(40 * var(--u)) rgba(255, 214, 120, .45));
+  transition: opacity .45s ease, transform .45s ease;
+}
+#stage.pool-weapon .showcase { opacity: 1; pointer-events: auto; transform: none; animation: showcaseFloat 4.2s ease-in-out .45s infinite; }
+@keyframes showcaseFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(calc(-18 * var(--u))) rotate(1.5deg); } }
 .U { position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u)); width: calc(var(--w) * var(--u)); height: calc(var(--h) * var(--u)); }
 
 /* 可点区域：盖在底图上，悬停时把下面画好的按钮提亮 */
@@ -361,3 +372,9 @@ button { font-family: inherit; }
   0% { opacity: 1; transform: translate(0, 0) scale(1); }
   100% { opacity: 0; transform: translate(calc(var(--dx) * var(--u)), calc((var(--dy) + 22) * var(--u))) scale(.35); }
 }
+
+/* ---------- 武器展示尺寸 ---------- */
+#reveal.wp .char { height: calc(760 * var(--u)); bottom: calc(170 * var(--u)); }
+.card.wp img { top: 46%; height: calc(470 * var(--u)); width: 150%; object-fit: contain; transform: translate(-50%, -50%); }
+.pool .pc.wp img { height: 70%; max-width: 88%; object-fit: contain; bottom: calc(46 * var(--u)); }
+.preview.wp .art img { max-height: 92%; }
