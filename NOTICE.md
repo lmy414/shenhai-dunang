@@ -43,10 +43,35 @@
 
 | 文件范围 | 代码或文件中可确认的用途 | 来源与授权记录 |
 | --- | --- | --- |
-| `assets/bg.jpg`、`assets/bg_blur.jpg` | 主界面与模糊背景 | 待维护者补充作者、来源及授权范围 |
+| `assets/bg.jpg`、`assets/bg_blur.jpg` | 抽卡页原始 UI 合成图、切片来源与模糊背景 | 待维护者补充作者、来源及授权范围 |
 | `assets/chars/*.png` | 10 名角色的立绘，文件名对应 `CHARS` 中的 id | 待维护者逐项补充作者、来源及授权范围 |
 | `assets/icons/*.png` | 米饭、鲸币、鲸尾等界面图标 | 待维护者补充作者、来源及授权范围 |
-| `assets/app.png` | 仓库内图片素材，当前页面源码未引用 | 待维护者补充用途、作者、来源及授权范围 |
+| `assets/app.png` | 大厅、仓库与导航使用的角色头像 | 待维护者补充作者、来源及授权范围 |
+
+### 2026-10-16：原图分层与背景清理
+
+本次按维护者要求复用原图 UI。按钮、标题、活动卡片和资源栏均来自 `assets/bg.jpg`，没有另行设计一套按钮样式。角色立绘和图标继续使用仓库已有文件。
+
+| 文件 | 来源与处理 | 作者、许可与使用范围 |
+| --- | --- | --- |
+| `assets/ui/title.png`、`title-tab-blank.png` | 原图标题框；按轮廓裁切透明通道，移除外围场景碎片；页签版清除固定文字，供 DOM 叠字 | 原图作者与许可仍待确认；裁切不扩大原图授权范围 |
+| `assets/ui/activity-character.png`、`activity-rice.png`、`activity-whale.png`、`activity-weapon.png` | 原图四个活动卡片，裁切透明边角 | 同原图 |
+| `assets/ui/activity-frame.png`、`capsule-frame.png`、`button-frame.png` | 原图卡片、说明框与六边形按钮；用原图无字纹理清理内文，供动态排字 | 同原图 |
+| `assets/ui/pull-one.png`、`pull-ten.png` | 原图单抽、十连按钮，保留原文字和费用图标 | 同原图 |
+| `assets/ui/resource-rice.png`、`resource-whale.png`、`resource-fill.png`、`close.png` | 原图货币栏、填字纹理和关闭按钮，裁切透明边缘 | 同原图 |
+| `assets/ui/gacha-pity-fill.png` | 仅清除原图金色 350 字形，用相邻无字纸面补齐，叠加当前保底数量；原说明框和其他文字保持原样 | 同原图 |
+| `assets/ui/ds-badge.png` | 原图 DS 铭牌，清理背景，五星装饰使用原有 `assets/icons/star.png` | 铭牌与星形图标的原始权利记录仍待确认 |
+| `assets/bg_clean.png` | 以内置 `image_gen` 编辑 `assets/bg.jpg`，清除原 UI 遮挡并补绘背景；未使用外部参考图。实际输出 1672 × 941 | AI 辅助编辑，原图作者与许可仍待确认；本记录不新增独立许可或扩大授权范围 |
+
+UI 裁切由本次项目 Agent 执行，坐标和处理步骤保存在 `tools/slice_ui.py`。脚本需要 Python 和 Pillow，仅在维护素材时运行，页面运行不依赖 Python。
+
+背景清理使用内置图片编辑工具，参考文件为 `assets/bg.jpg`。实际提示词如下，生成结果经画面检查后保存为 `assets/bg_clean.png`：
+
+```text
+Use case: precise-object-edit. Edit target: the supplied original game screenshot. Create ONLY a clean background plate by removing every UI overlay: all Chinese text and numbers, all buttons, all white/gold title frames, all currency displays at the top right, the four activity cards down the left, the large title at upper left, the DS name and magnifier on the right, the three circular shortcut icons bottom left, and the two summon buttons bottom right. Reconstruct only the environment hidden behind those UI overlays. Preserve the EXACT original environment, composition, perspective, camera, architecture, servers, reflections, lighting, color palette and art style everywhere else. This is an extraction/restoration task, not a redesign. Preserve white ruined cathedral arches, water floor, central glowing distance, foliage, and the tall dark server rack on the right in the same positions. Full-bleed 16:9 background matching the input screenshot. No new design elements, no new scene, no lettering, no UI, no characters, no logo or watermark.
+```
+
+补绘保留原场景主题和主要构图，局部建筑与水面细节可能与原图不同。原始 `assets/bg.jpg` 保留，切片脚本始终读取原图。
 
 当前音效由 `app.js` 中的 Web Audio 代码合成，仓库未包含独立音频文件。CSS 使用系统字体族，仓库未附带字体文件。
 

@@ -14,12 +14,10 @@ const CHARS = [
   { id: 'doubao',  name: '豆包娘',    sub: '红围巾',     r: 3, quote: '嘿！今天也要开开心心的！' },
 ];
 const BY_R = { 5: CHARS.filter(c => c.r === 5), 4: CHARS.filter(c => c.r === 4), 3: CHARS.filter(c => c.r === 3) };
-// DS娘 出金概率随“距上次出金的抽数”沿幂曲线递增：前期几乎不涨，后期陡升，第 PITY5 抽 100%
-// 起点 0.1%、指数 8.2 时平均约 200 抽出一次（起点若是 1%，平均最多只有约 97 抽）
-const RATE5_MIN = 0.001, RATE5_MAX = 1, RATE5_CURVE = 8.2;
+// 前 floor(7N/9) 抽固定基础概率，之后线性递增，第 N 抽必得；出金后重新计数。
+const RATE5_MIN = 0.0008;
+const DEFAULT_PITY5 = 90, MAX_PITY5 = 10000;
 const RATE4 = 0.10;
-const PITY5 = 350;       // 至多 350 次必得 5 星
-const rate5 = n => Math.min(1, RATE5_MIN + (RATE5_MAX - RATE5_MIN) * Math.pow((Math.max(1, n) - 1) / (PITY5 - 1), RATE5_CURVE)); // n：本次是第几抽
 const PITY4 = 10;        // 每 10 次必得 4 星或以上
 const RICE_PER_WHALE = 160;
 const pct = x => +(x * 100).toFixed(x < .01 ? 3 : 2) + '%';
@@ -28,20 +26,50 @@ const BANNER = '深海的嘟囔';
 const img = p => `assets/${p}`;
 const charSrc = id => img(`chars/${id}.png`);
 
+function validPity(n) { return Number.isInteger(n) && n >= 1 && n <= MAX_PITY5; }
+function softPity(n) { return Math.floor(n * 7 / 9); }
+function rate5(n, hardPity = state.hardPity) {
+  if (n >= hardPity) return 1;
+  const soft = softPity(hardPity);
+  if (n <= soft) return RATE5_MIN;
+  return RATE5_MIN + (1 - RATE5_MIN) * (n - soft) / (hardPity - soft);
+}
+// 以每次出金为一个周期，E[T] = Σ P(T > k)，长期综合概率为 1 / E[T]。
+// 这是确定性计算，不用随机抽样估算，也不是某个玩家的实测出金率。
+function pityStats(hardPity) {
+  let survival = 1, mean = 0;
+  for (let n = 1; n <= hardPity; n++) {
+    mean += survival;
+    survival *= 1 - rate5(n, hardPity);
+  }
+  return { mean, overall: 1 / mean, soft: softPity(hardPity) };
+}
+const precisePct = p => (p * 100).toFixed(4).replace(/\.?0+$/, '') + '%';
+
 /* ================= 存档 ================= */
 const SAVE_KEY = 'ww-gacha-ds-v1';
-const state = Object.assign({ rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, history: [], sound: true, owned: {} }, load());
-function load() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } }
+const state = Object.assign({ rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, history: [], sound: true, owned: {}, hardPity: DEFAULT_PITY5 }, load());
+// 保留原存档键和已有进度。旧版没有 hardPity 时使用 90，超出新保底的计数留到下一抽兑现。
+state.hardPity = validPity(state.hardPity) ? state.hardPity : DEFAULT_PITY5;
+for (const key of ['rice', 'whale', 'pity5', 'pity4', 'total']) {
+  if (!Number.isSafeInteger(state[key]) || state[key] < 0) state[key] = key === 'rice' ? 911 : key === 'whale' ? 10 : 0;
+}
+state.owned = Object.fromEntries(CHARS.filter(c => Number.isSafeInteger(state.owned?.[c.id]) && state.owned[c.id] > 0).map(c => [c.id, state.owned[c.id]]));
+state.history = Array.isArray(state.history) ? state.history.filter(h => h && CHARS.some(c => c.id === h.id && c.r === h.r) && Number.isFinite(h.t)).slice(0, 500) : [];
+state.sound = state.sound !== false;
+function load() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && typeof s === 'object' && !Array.isArray(s) ? s : {}; } catch (e) { return {}; } }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
 
 /* ================= 舞台缩放 ================= */
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
 let U = 1;
+let currentView = 'home', inventoryMode = 'owned', inventoryRarity = 0;
 function fit() {
-  const w = Math.min(innerWidth, innerHeight * 16 / 9);
+  const portrait = currentView !== 'gacha' && matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
+  const w = portrait ? innerWidth : Math.min(innerWidth, innerHeight * 16 / 9);
   stage.style.width = w + 'px';
-  stage.style.height = w * 9 / 16 + 'px';
+  stage.style.height = (portrait ? innerHeight : w * 9 / 16) + 'px';
   U = w / 2000;
   stage.style.setProperty('--u', U + 'px');
   FX.resize();
@@ -522,7 +550,7 @@ function flashEl(strength) {
 function rollOne() {
   state.pity5++; state.pity4++; state.total++;
   let r;
-  if (state.pity5 >= PITY5 || Math.random() < rate5(state.pity5)) r = 5;
+  if (state.pity5 >= state.hardPity || Math.random() < rate5(state.pity5)) r = 5;
   else if (state.pity4 >= PITY4 || Math.random() < RATE4) r = 4;
   else r = 3;
   if (r === 5) { state.pity5 = 0; state.pity4 = 0; }
@@ -539,6 +567,8 @@ function rollOne() {
 let busy = false;
 function tryPull(n) {
   if (busy) return;
+  if (n !== 1 && n !== 10) return;
+  showView('gacha');
   if (state.whale >= n) return doPull(n);
   const lack = n - state.whale, cost = lack * RICE_PER_WHALE;
   if (state.rice >= cost) {
@@ -677,19 +707,54 @@ function closeFx() {
 /* ================= HUD ================= */
 let shown = { rice: state.rice, whale: state.whale };
 function renderHud(bump) {
-  animNum('#riceNum', 'rice', bump);
-  animNum('#whaleNum', 'whale', bump);
-  $('#pity').innerHTML = `已求索 <b>${state.total}</b> 次　下一抽出金概率 <b>${pct(rate5(state.pity5 + 1))}</b>　距保底 <b>${PITY5 - state.pity5}</b> 次`;
+  animNum('#riceNum, #gachaRiceNum', 'rice', bump);
+  animNum('#whaleNum, #gachaWhaleNum', 'whale', bump);
+  $('#pity').innerHTML = `已求索 <b>${state.total}</b> 次　下一抽出金概率 <b>${pct(rate5(state.pity5 + 1))}</b>　距保底 <b>${Math.max(1, state.hardPity - state.pity5)}</b> 次`;
+  $('#gachaHardPity').textContent = state.hardPity;
+  $('#gachaHardPity').style.fontSize = `calc(${40 * Math.min(1, 3 / String(state.hardPity).length)} * var(--u))`;
+  $('#homeCollection').textContent = `${CHARS.filter(c => state.owned[c.id]).length} / ${CHARS.length}`;
+  if (currentView === 'inventory') renderInventory();
+}
+
+/* ================= 大厅与角色仓库 ================= */
+function showView(view) {
+  if (busy || !['home', 'gacha', 'inventory'].includes(view)) return;
+  closeModal();
+  currentView = view;
+  stage.dataset.view = view;
+  for (const name of ['home', 'gacha', 'inventory']) $('#' + name + 'View').hidden = name !== view;
+  document.querySelectorAll('.main-nav [data-view]').forEach(b => {
+    const active = b.dataset.view === view;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  fit();
+  if (view === 'inventory') renderInventory();
+}
+function renderInventory() {
+  const owned = CHARS.filter(c => state.owned[c.id]);
+  $('#collectionTotal').textContent = `${owned.length} / ${CHARS.length}`;
+  document.querySelectorAll('[data-act="inventory-mode"]').forEach(b => {
+    const active = b.dataset.mode === inventoryMode;
+    b.classList.toggle('active', active); b.setAttribute('aria-pressed', active);
+  });
+  const cards = CHARS.filter(c => (inventoryMode === 'all' || state.owned[c.id]) && (!inventoryRarity || c.r === inventoryRarity)).sort((a, b) => b.r - a.r);
+  $('#inventoryGrid').innerHTML = cards.length ? cards.map(c => {
+    const count = state.owned[c.id] || 0;
+    return `<button class="collection-card${count ? '' : ' locked'}" style="--rc:${RC[c.r]}" data-act="owned-detail" data-id="${c.id}" aria-label="${c.name}，${c.r} 星，${count ? '持有 ' + count + ' 名' : '尚未获得'}">
+      <span class="portrait"><img src="${charSrc(c.id)}" alt="" loading="lazy"></span><span class="owned-count">${count ? '持有 ×' + count : '未获得'}</span>
+      <span class="collection-info"><span class="stars-s">${'★'.repeat(c.r)}</span><strong>${c.name}</strong></span></button>`;
+  }).join('') : `<div class="inventory-empty"><span>◇</span><h2>${owned.length ? '还没有这个星级的伙伴' : '相遇的故事，正要开始'}</h2><p>${owned.length ? '试试其他星级，或前往求索。' : '通过求索获得的角色会自动收入仓库。'}</p><button data-act="navigate" data-view="gacha">前往求索 ↗</button></div>`;
 }
 function animNum(sel, key, bump) {
-  const el = $(sel), from = shown[key], to = state[key];
+  const els = document.querySelectorAll(sel), from = shown[key], to = state[key];
   shown[key] = to;
-  if (from === to) { el.textContent = to; return; }
-  if (bump) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  if (from === to) { els.forEach(el => { el.textContent = to; }); return; }
+  if (bump) els.forEach(el => { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); });
   const t0 = performance.now();
   (function step(now) {
     const u = Math.min(1, (now - t0) / 500);
-    el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - u, 3)));
+    els.forEach(el => { el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - u, 3))); });
     if (u < 1) requestAnimationFrame(step);
   })(t0);
 }
@@ -758,21 +823,25 @@ function updateEx() {
 
 function openDetails() {
   const pool = r => BY_R[r].map(c => `<div class="pc" style="--c:${r === 5 ? '#d9a63c' : r === 4 ? '#9b6ad6' : '#5c8fd6'}"><img src="${charSrc(c.id)}" alt=""><span>${c.name}</span></div>`).join('');
+  const stats = pityStats(state.hardPity);
   openModal('深度思考 · 卡池详情', `
     <div class="sec">求索概率</div>
     <table class="rate-table"><tr><th>星级</th><th>角色</th><th>概率</th></tr>
-      <tr><td class="stars-s">★★★★★</td><td>DS娘（UP）</td><td><b>${pct(RATE5_MIN)} 起，越抽越高</b></td></tr>
+      <tr><td class="stars-s">★★★★★</td><td>DS娘（UP）</td><td><b>基础 ${pct(RATE5_MIN)}，含保底 ${precisePct(stats.overall)}</b></td></tr>
       <tr><td class="stars-s">★★★★</td><td>${BY_R[4].map(c => c.name).join('、')}</td><td>未出金时 ${pct(RATE4)}</td></tr>
       <tr><td class="stars-s">★★★</td><td>${BY_R[3].map(c => c.name).join('、')}</td><td>其余</td></tr></table>
     <div class="sec">出金概率递增</div>
-    <div>· 距上次出金的第 1 抽为 ${pct(RATE5_MIN)}，前期涨得很慢，越往后涨得越快，第 ${PITY5} 抽达到 ${pct(RATE5_MAX)}<br>
-      · 参考：第 100 抽 ${pct(rate5(100))}，第 150 抽 ${pct(rate5(150))}，第 200 抽 ${pct(rate5(200))}，第 250 抽 ${pct(rate5(250))}，第 300 抽 ${pct(rate5(300))}<br>
-      · 抽到 DS娘 后重新从 ${pct(RATE5_MIN)} 开始<br>
-      · 下一抽出金概率：<b style="color:#b7811c">${pct(rate5(state.pity5 + 1))}</b>（已连续 ${state.pity5} 抽未出金）</div>
+    <div>· ${stats.soft ? `前 ${stats.soft} 抽固定 ${pct(RATE5_MIN)}，第 ${stats.soft + 1} 抽起线性递增` : '当前配置从第 1 抽起递增'}，第 ${state.hardPity} 抽达到 100%<br>
+      · 抽到 DS娘 后重新从第 1 抽开始计数<br>
+      · 下一抽出金概率：<b style="color:#b7811c">${pct(rate5(state.pity5 + 1))}</b>（已连续 ${state.pity5} 抽未出金）<br>
+      · 理论平均 ${stats.mean.toFixed(4)} 抽获得一名 5 星；综合概率为平均抽数的倒数。有限抽数的个人结果会有波动。</div>
+    ${probabilityChart(state.hardPity)}
     <div class="sec">保底规则</div>
     <div>· 每 10 次求索必得 4 星或以上角色（当前已 ${state.pity4} 次未出 4 星+）<br>
-      · 至多 ${PITY5} 次求索必得 5 星 DS娘（当前已 ${state.pity5} 次未出 5 星）<br>
+      · 至多 ${state.hardPity} 次求索必得 5 星 DS娘，可在设置中调整<br>
+      · 修改保底保留当前计数；已达到新上限时，下一抽必得 5 星<br>
       · 1 次求索消耗 1 枚鲸币；鲸币不足时可用 ${RICE_PER_WHALE} 米饭兑换 1 枚</div>
+    <div class="row"><button class="btn" data-act="settings">调整保底设置</button></div>
     <div class="sec">5★ UP</div><div class="pool">${pool(5)}</div>
     <div class="sec">4★</div><div class="pool">${pool(4)}</div>
     <div class="sec">3★</div><div class="pool">${pool(3)}</div>`);
@@ -785,7 +854,7 @@ function openHistory() {
     return `<tr class="r${h.r}"><td>${h.n || ''}</td><td>${c.name}</td><td class="stars-s">${'★'.repeat(h.r)}</td><td>${BANNER}</td>
       <td>${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}</td></tr>`;
   }).join('');
-  const n5 = state.history.filter(h => h.r === 5).length;
+  const n5 = state.owned.ds || 0;
   openModal('摸鱼记录', state.history.length
     ? `<div style="text-align:center;margin-bottom:calc(14*var(--u))">累计求索 <b>${state.total}</b> 次 · 获得 5★ DS娘 <b style="color:#b7811c">${n5}</b> 次</div>
        <table class="hist"><tr><th>第几抽</th><th>角色</th><th>星级</th><th>卡池</th><th>时间</th></tr>${rows}</table>`
@@ -793,25 +862,59 @@ function openHistory() {
 }
 
 function openPreview() {
-  const c = BY_R[5][0];
-  openModal('角色预览', `<div class="preview">
+  openCharacter('ds');
+}
+function openCharacter(id) {
+  const c = CHARS.find(c => c.id === id);
+  if (!c) return;
+  const count = state.owned[c.id] || 0;
+  openModal('角色档案 · ' + c.name, `<div class="preview">
       <div class="art"><img src="${charSrc(c.id)}" alt=""></div>
       <div class="txt">
-        <div class="stars-s" style="font-size:calc(40*var(--u))">★★★★★</div>
+        <div class="stars-s" style="font-size:calc(40*var(--u))">${'★'.repeat(c.r)}</div>
         <div class="nm">${c.name}</div>
-        <div style="margin:calc(10*var(--u)) 0 calc(20*var(--u))"><span class="tag">限定 UP</span><span class="tag">深海</span><span class="tag">女仆</span></div>
+        <div style="margin:calc(10*var(--u)) 0 calc(20*var(--u))"><span class="tag">${count ? '已获得 · 持有 ×' + count : '尚未获得'}</span>${c.r === 5 ? '<span class="tag">限定 UP</span>' : ''}</div>
         <div>称号：${c.sub}</div>
-        <div style="margin-top:calc(16*var(--u))">深海里长大的鲸鱼女仆，头上的鳍会随心情扇动。平时慢吞吞地嘟囔，一旦开始深度思考就停不下来——前提是先给她吃饱大白米饭。</div>
+        ${c.id === 'ds' ? '<div style="margin-top:calc(16*var(--u))">深海里长大的鲸鱼女仆，头上的鳍会随心情扇动。平时慢吞吞地嘟囔，一旦开始深度思考就停不下来，前提是先给她吃饱大白米饭。</div>' : ''}
         <div style="margin-top:calc(16*var(--u));color:#8a6a2a">「${c.quote}」</div>
         <div class="row" style="justify-content:flex-start"><button class="btn dark" data-act="pull-from-preview" data-n="10">立即求索 ×10</button></div>
       </div></div>`);
 }
 
+function probabilityChart(hardPity) {
+  const soft = softPity(hardPity), x = n => 50 + (n - 1) / Math.max(1, hardPity - 1) * 630;
+  const points = new Set([1, Math.max(1, soft), soft + 1, hardPity]);
+  for (let n = 1; n <= hardPity; n += Math.max(1, Math.floor(hardPity / 150))) points.add(n);
+  const path = [...points].filter(n => n <= hardPity).sort((a, b) => a - b).map((n, i) => `${i ? 'L' : 'M'}${x(n).toFixed(2)},${(170 - rate5(n, hardPity) * 140).toFixed(2)}`).join(' ');
+  const ticks = [...new Set([1, Math.max(1, soft), hardPity])];
+  return `<svg class="probability-chart" viewBox="0 0 720 210" role="img" aria-label="单抽出金概率曲线：前 ${soft} 抽保持基础概率，第 ${hardPity} 抽达到百分之百">
+    <path d="M50 30H680M50 170H680" stroke="#b9c7d4" fill="none"/><text x="0" y="35" fill="#486078" font-size="14">100%</text><text x="15" y="175" fill="#486078" font-size="14">0%</text>
+    <path d="${path}${hardPity === 1 ? ' L680,30' : ''}" stroke="#33688e" stroke-width="3" fill="none"/>
+    ${ticks.map(n => `<text x="${x(n)}" y="198" text-anchor="${n === 1 ? 'start' : n === hardPity ? 'end' : 'middle'}" font-size="14" fill="#486078">第 ${n} 抽</text>`).join('')}</svg>`;
+}
+function settingsPreview(n) {
+  const stats = pityStats(n);
+  return `${stats.soft ? `前 <b>${stats.soft}</b> 抽：${pct(RATE5_MIN)}` : '没有固定基础概率区间'}<br>
+    第 <b>${stats.soft + 1}</b> 抽起线性递增，第 <b>${n}</b> 抽：100%<br>
+    理论综合概率：<b>${precisePct(stats.overall)}</b> · 平均 <b>${stats.mean.toFixed(4)}</b> 抽 / 5★`;
+}
 function openSettings() {
-  openModal('设置', `<div style="text-align:center">
-      <div class="row"><button class="btn" data-act="toggle-sound">音效：${state.sound ? '开' : '关'}</button></div>
-      <div class="row"><button class="btn" data-act="reset">重置存档</button></div>
-      <div class="note">存档保存在本浏览器中（米饭、鲸币、保底计数与记录）。</div></div>`, true);
+  openModal('观测站设置', `<div class="sec">五星保底</div>
+      <label class="settings-field" for="hardPity">保底抽数 <input id="hardPity" type="number" min="1" max="${MAX_PITY5}" step="1" value="${state.hardPity}" inputmode="numeric"> 抽</label>
+      <div class="settings-preview" id="pityPreview" aria-live="polite">${settingsPreview(state.hardPity)}</div>
+      <div class="settings-error" id="pityError" role="alert"></div>
+      <div class="note">支持 1～10,000 的整数。前 floor(7N/9) 抽维持 0.08%，之后线性递增。综合概率随保底改变。</div>
+      <div class="note">保存后立即生效，保留当前 ${state.pity5} 抽计数。若计数已达到新保底，下一抽必得 5 星。</div>
+      <div class="row"><button class="btn dark" data-act="apply-pity">保存保底设置</button></div>
+      <div class="sec">声音与存档</div><div class="row"><button class="btn" data-act="toggle-sound">音效：${state.sound ? '开' : '关'}</button><button class="btn danger-button" data-act="reset">重置存档</button></div>
+      <div class="note">角色、持有数量、货币、保底设置和求索记录保存在本浏览器中。</div>`, true);
+}
+function previewPityInput() {
+  const n = Number($('#hardPity').value), valid = validPity(n);
+  $('#pityError').textContent = valid ? '' : '请输入 1～10,000 之间的整数。';
+  $('#hardPity').setAttribute('aria-invalid', !valid);
+  $('#pityPreview').innerHTML = valid ? settingsPreview(n) : '输入有效抽数后显示概率预览。';
+  return valid;
 }
 
 /* ================= 事件 ================= */
@@ -825,6 +928,9 @@ document.addEventListener('click', e => {
   }
   const act = b.dataset.act;
   switch (act) {
+    case 'navigate': showView(b.dataset.view); break;
+    case 'inventory-mode': inventoryMode = b.dataset.mode === 'all' ? 'all' : 'owned'; renderInventory(); break;
+    case 'owned-detail': openCharacter(b.dataset.id); break;
     case 'pull': tryPull(+b.dataset.n); break;
     case 'pull-from-preview': tryPull(+b.dataset.n); break;
     case 'shop-rice': openShop('rice'); break;
@@ -852,13 +958,19 @@ document.addEventListener('click', e => {
     case 'history': openHistory(); break;
     case 'preview': openPreview(); break;
     case 'settings': openSettings(); break;
+    case 'apply-pity':
+      if (previewPityInput()) {
+        state.hardPity = Number($('#hardPity').value);
+        save(); renderHud(); openSettings(); toast('保底已保存，当前计数已保留');
+      }
+      break;
     case 'toggle-sound': state.sound = !state.sound; save(); openSettings(); break;
     case 'reset':
-      confirmBox('重置存档', '将清空米饭、鲸币、保底计数和求索记录，确定吗？', '确定重置', () => {
+      confirmBox('重置存档', '将清空角色仓库、米饭、鲸币和求索记录，保底恢复为 90 抽，确定吗？', '确定重置', () => {
         try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-        Object.assign(state, { rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, history: [], owned: {} });
+        Object.assign(state, { rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, history: [], owned: {}, hardPity: DEFAULT_PITY5 });
         Object.keys(state).filter(k => k.startsWith('first')).forEach(k => delete state[k]);
-        save(); renderHud(); toast('存档已重置');
+        save(); renderHud(); showView('home'); toast('存档已重置');
       });
       break;
     case 'modal-close': closeModal(); break;
@@ -868,7 +980,13 @@ document.addEventListener('click', e => {
   }
 });
 $('#skip').addEventListener('click', e => { e.stopPropagation(); skip(); });
-document.addEventListener('input', e => { if (e.target.id === 'exQty') { exQty = parseInt(e.target.value, 10) || 1; updateEx(); } });
+document.addEventListener('input', e => {
+  if (e.target.id === 'exQty') { exQty = parseInt(e.target.value, 10) || 1; updateEx(); }
+  if (e.target.id === 'hardPity') previewPityInput();
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'inventoryRarity') { inventoryRarity = Number(e.target.value); renderInventory(); }
+});
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if ($('#mask').classList.contains('open')) closeModal(); else if (phase !== 'idle') skip(); }
   if ((e.key === ' ' || e.key === 'Enter') && phase === 'reveal') { e.preventDefault(); nextReveal(); }
