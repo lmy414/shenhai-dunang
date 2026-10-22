@@ -1645,7 +1645,7 @@ function openFishInfo() {
     <div class="sec">出现概率与收获</div>
     <table class="rate-table"><tr><th>星级</th><th>出现概率</th><th>逃脱率</th><th>捞到获得</th></tr>
       ${[5, 4, 3].map(r => `<tr><td class="stars-s">${'★'.repeat(r)}</td><td>${r === 3 ? '其余' : pct((r === 5 ? FISH_RATE5 : FISH_RATE4) * (1 + (b.lure || 0)) * w.rare)}</td><td>${pct(fishEscape(r, b, w))}</td><td>${fishReward(r, b)} 米饭</td></tr>`).join('')}</table>
-    <div class="note">出现概率与角色池的长期比例一致；出 5★ 时 50% 是 DS娘。表中数字已计入当前天气和装备的加成。</div>
+    <div class="note">基础出现概率参考角色池默认 90 抽保底的长期比例，不随保底设置改变；出 5★ 时 50% 是 DS娘。表中数字已计入当前天气和装备的加成。</div>
     <div class="sec">天气</div>
     <table class="rate-table"><tr><th>天气</th><th>效果</th></tr>
       ${Object.entries(WEATHERS).map(([key, x]) => `<tr${key === (FISHING.session && FISHING.session.weather) ? ' style="background:#fff6dc"' : ''}><td>${x.icon} ${x.name}</td><td>${x.text}</td></tr>`).join('')}</table>

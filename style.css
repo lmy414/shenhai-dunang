@@ -536,8 +536,8 @@ button { font-family: inherit; }
 .pool .pc.wp img { height: 70%; max-width: 88%; object-fit: contain; bottom: calc(46 * var(--u)); }
 .preview.wp .art img { max-height: 92%; }
 @media (max-width: 700px) and (orientation: portrait) {
-  #stage[data-view="gacha"] .mask { position: fixed; width: 100vw; height: 100dvh; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-  #stage[data-view="gacha"]:has(.mask.open) { overflow: visible; }
+  #stage:is([data-view="gacha"], [data-view="fishing"]) .mask { position: fixed; width: 100vw; height: 100dvh; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  #stage:is([data-view="gacha"], [data-view="fishing"]):has(.mask.open) { overflow: visible; }
   .collection-info small { font-size: 12px; }
 }
 
@@ -611,6 +611,10 @@ button { font-family: inherit; }
 .gear-card .perk { display: flex; align-items: center; gap: calc(6 * var(--u)); font-size: calc(19 * var(--u)); line-height: 1.4; }
 .gear-card .perk img { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
 .gear-card .tagline { position: absolute; right: calc(10 * var(--u)); top: calc(8 * var(--u)); font-size: calc(17 * var(--u)); color: #b7811c; }
+
+@media (max-width: 700px) and (orientation: portrait) {
+  .gear-list { grid-template-columns: 1fr; }
+}
 
 /* ---------- 角色池首页：当期 UP 展示 ---------- */
 .char-showcase { pointer-events: none; transition: opacity .45s ease, transform .45s ease; }
