@@ -1,34 +1,51 @@
 'use strict';
 
 /* ================= 数据 ================= */
+// 原来的 10 名 Q 版角色统一为 5 星；「痴呆」系列为 4 星，「小小」系列为 3 星
 const CHARS = [
   { id: 'ds',      name: 'DS娘',      sub: '深海的嘟囔 · 大肥鱼', r: 5, quote: '咕噜……在深海里想了好久好久，终于浮上来见你啦。以后要管饭哦！' },
-  { id: 'claude',  name: 'Claude娘',  sub: '秋日长思',   r: 4, quote: '这个问题，让我认真想一想再回答你。' },
-  { id: 'gpt',     name: 'GPT娘',     sub: '白龙之息',   r: 4, quote: '有什么想问的？我一直都在。' },
-  { id: 'gemini',  name: 'Gemini娘',  sub: '双瞳星猫',   r: 4, quote: '左眼看今天，右眼看明天～喵。' },
-  { id: 'grok',    name: 'Grok娘',    sub: '小恶魔女王', r: 4, quote: '嘿嘿，说大实话可是我的特长！' },
-  { id: 'qwen',    name: '千问娘',    sub: '扇底千问',   r: 4, quote: '千问千答，不急，慢慢来。' },
-  { id: 'kimi',    name: 'Kimi娘',    sub: '月下女仆',   r: 3, quote: '再长的文章，交给我读就好。' },
-  { id: 'mistral', name: 'Mistral娘', sub: '法棍猫猫',   r: 3, quote: '要不要来一根？刚出炉的法棍哦。' },
-  { id: 'zhipu',   name: '智谱娘',    sub: '眠狐',       r: 3, quote: '呼……醒着的时候，我可是很聪明的。' },
-  { id: 'doubao',  name: '豆包娘',    sub: '红围巾',     r: 3, quote: '嘿！今天也要开开心心的！' },
+  { id: 'claude',  name: 'Claude娘',  sub: '秋日长思',   r: 5, quote: '这个问题，让我认真想一想再回答你。' },
+  { id: 'gpt',     name: 'GPT娘',     sub: '白龙之息',   r: 5, quote: '有什么想问的？我一直都在。' },
+  { id: 'gemini',  name: 'Gemini娘',  sub: '双瞳星猫',   r: 5, quote: '左眼看今天，右眼看明天～喵。' },
+  { id: 'grok',    name: 'Grok娘',    sub: '小恶魔女王', r: 5, quote: '嘿嘿，说大实话可是我的特长！' },
+  { id: 'qwen',    name: '千问娘',    sub: '扇底千问',   r: 5, quote: '千问千答，不急，慢慢来。' },
+  { id: 'kimi',    name: 'Kimi娘',    sub: '月下女仆',   r: 5, quote: '再长的文章，交给我读就好。' },
+  { id: 'mistral', name: 'Mistral娘', sub: '法棍猫猫',   r: 5, quote: '要不要来一根？刚出炉的法棍哦。' },
+  { id: 'zhipu',   name: '智谱娘',    sub: '眠狐',       r: 5, quote: '呼……醒着的时候，我可是很聪明的。' },
+  { id: 'doubao',  name: '豆包娘',    sub: '红围巾',     r: 5, quote: '嘿！今天也要开开心心的！' },
+  { id: 'daze-feiyu',  name: '痴呆大肥鱼娘', sub: '痴呆系列', r: 4, quote: '诶嘿嘿……饭、饭呢？刚才明明闻到饭香了……' },
+  { id: 'daze-gpt',    name: '痴呆GPT娘',    sub: '痴呆系列', r: 4, quote: '嗯……我一直都在……在发呆……' },
+  { id: 'daze-kimi',   name: '痴呆Kimi娘',   sub: '痴呆系列', r: 4, quote: '读到第几页来着……算了，从头再读一遍吧。' },
+  { id: 'daze-gemini', name: '痴呆Gemini娘', sub: '痴呆系列', r: 4, quote: '左眼看今天，右眼……右眼睡着了，喵。' },
+  { id: 'daze-grok',   name: '痴呆Grok娘',   sub: '痴呆系列', r: 4, quote: '说大实话……我刚刚把台词忘了。' },
+  { id: 'daze-qwen',   name: '痴呆千问娘',   sub: '痴呆系列', r: 4, quote: '千问千答……第一问是什么来着？' },
+  { id: 'daze-zhipu',  name: '痴呆智谱娘',   sub: '痴呆系列', r: 4, quote: '呼……呼……（口水滴到了键盘上）' },
+  { id: 'daze-doubao', name: '痴呆豆包娘',   sub: '痴呆系列', r: 4, quote: '嘿……嘿嘿……开心到流口水了！' },
+  { id: 'mini-feiyu',   name: '小小大肥鱼娘',    sub: '小小肥鱼娘系列', r: 3, quote: '小小的我，也想被管饭！' },
+  { id: 'mini-gpt',     name: '小小GPT肥鱼娘',   sub: '小小肥鱼娘系列', r: 3, quote: '有问题？小小的我也会努力回答！' },
+  { id: 'mini-kimi',    name: '小小Kimi肥鱼娘',  sub: '小小肥鱼娘系列', r: 3, quote: '书太厚了……我能先睡一会儿吗？' },
+  { id: 'mini-minimax', name: '小小MiniMax肥鱼娘', sub: '小小肥鱼娘系列', r: 3, quote: '个子小小，能量最大！' },
+  { id: 'mini-claude',  name: '小小Claude肥鱼娘', sub: '小小肥鱼娘系列', r: 3, quote: '让我想想……嗯，先吃块小饼干。' },
+  { id: 'mini-gemini',  name: '小小Gemini肥鱼娘', sub: '小小肥鱼娘系列', r: 3, quote: '尾巴是渐变色的哦，好看吧！' },
+  { id: 'mini-qwen',    name: '小小千问肥鱼娘',  sub: '小小肥鱼娘系列', r: 3, quote: '千问千答，小小地答一下！' },
+  { id: 'mini-shaohuo', name: '小小大烧货娘',    sub: '小小肥鱼娘系列', r: 3, quote: '今天也在努力烧……烧什么来着？' },
 ];
 CHARS.forEach(c => { c.kind = 'char'; });
 
-// 武器数据。字段用 key 而不是 id：发布工作流会把 app.js 里所有 `id: '…'` 当作角色 id，去 assets/chars/ 检查立绘
+// 武器数据（fish 为装进捕鱼装备栏时的加成，含义见 PERKS）。字段用 key 而不是 id：发布工作流会把 app.js 里所有 `id: '…'` 当作角色 id，去 assets/chars/ 检查立绘
 const WEAPON_DATA = [
-  { key: 'whalefall',   name: '鲸落',         type: '长柄', owner: 'ds',      r: 5, quote: '一鲸落，万物生。深海里最丰盛的一顿饭，是一头鲸慢慢沉下去时留下的。' },
-  { key: 'longthought', name: '长考·秋菊',    type: '短刃', owner: 'claude',  r: 4, quote: '先别急着落刀，再想一想。' },
-  { key: 'dragonclaw',  name: '白龙爪',       type: '拳套', owner: 'gpt',     r: 4, quote: '有什么想问的？先握个手吧。' },
-  { key: 'twinstar',    name: '双子星猫',     type: '手铳', owner: 'gemini',  r: 4, quote: '左边一枪打今天，右边一枪打明天。' },
-  { key: 'candor',      name: '直言',         type: '长柄', owner: 'grok',    r: 4, quote: '我只说真话，斧子也是。' },
-  { key: 'qianfan',     name: '千问扇',       type: '法器', owner: 'qwen',    r: 4, quote: '千问千答，扇子一开，慢慢说。' },
-  { key: 'baguette',    name: '刚出炉的法棍', type: '长柄', owner: 'mistral', r: 3, quote: '近战武器，也是午饭。' },
-  { key: 'crescent',    name: '月牙书签',     type: '短刃', owner: 'kimi',    r: 3, quote: '再长的书，也有读完的一页。' },
-  { key: 'chilisauce',  name: '豆瓣酱枪',     type: '手铳', owner: 'doubao',  r: 3, quote: '开饭啦！谁要加辣？' },
-  { key: 'sleepbell',   name: '安眠铃',       type: '法器', owner: 'zhipu',   r: 3, quote: '铃一响，就到午睡时间了。' },
-  { key: 'ovenmitt',    name: '隔热手套',     type: '拳套', owner: '',        r: 3, quote: '食堂后厨的标配，抽到不亏。' },
-  { key: 'ricebowl',    name: '小鲸饭碗',     type: '法器', owner: '',        r: 3, quote: '盛满大白米饭，深海里也不会饿肚子。' },
+  { key: 'whalefall',   name: '鲸落',         type: '长柄', owner: 'ds',      r: 5, fish: { hold: .5, rice: .3, net: .2 }, quote: '一鲸落，万物生。深海里最丰盛的一顿饭，是一头鲸慢慢沉下去时留下的。' },
+  { key: 'longthought', name: '长考·秋菊',    type: '短刃', owner: 'claude',  r: 4, fish: { hold: .3 }, quote: '先别急着落刀，再想一想。' },
+  { key: 'dragonclaw',  name: '白龙爪',       type: '拳套', owner: 'gpt',     r: 4, fish: { net: .3 }, quote: '有什么想问的？先握个手吧。' },
+  { key: 'twinstar',    name: '双子星猫',     type: '手铳', owner: 'gemini',  r: 4, fish: { swift: .6 }, quote: '左边一枪打今天，右边一枪打明天。' },
+  { key: 'candor',      name: '直言',         type: '长柄', owner: 'grok',    r: 4, fish: { rice: .4 }, quote: '我只说真话，斧子也是。' },
+  { key: 'qianfan',     name: '千问扇',       type: '法器', owner: 'qwen',    r: 4, fish: { lure: .3 }, quote: '千问千答，扇子一开，慢慢说。' },
+  { key: 'baguette',    name: '刚出炉的法棍', type: '长柄', owner: 'mistral', r: 3, fish: { thrift: 400 }, quote: '近战武器，也是午饭。' },
+  { key: 'crescent',    name: '月牙书签',     type: '短刃', owner: 'kimi',    r: 3, fish: { swift: .3 }, quote: '再长的书，也有读完的一页。' },
+  { key: 'chilisauce',  name: '豆瓣酱枪',     type: '手铳', owner: 'doubao',  r: 3, fish: { rice: .15 }, quote: '开饭啦！谁要加辣？' },
+  { key: 'sleepbell',   name: '安眠铃',       type: '法器', owner: 'zhipu',   r: 3, fish: { sleep: .25 }, quote: '铃一响，就到午睡时间了。' },
+  { key: 'ovenmitt',    name: '隔热手套',     type: '拳套', owner: '',        r: 3, fish: { hold: .15 }, quote: '食堂后厨的标配，抽到不亏。' },
+  { key: 'ricebowl',    name: '小鲸饭碗',     type: '法器', owner: '',        r: 3, fish: { net: .12 }, quote: '盛满大白米饭，深海里也不会饿肚子。' },
 ];
 const WEAPONS = WEAPON_DATA.map(w => {
   const o = CHARS.find(c => c.id === w.owner);
@@ -42,10 +59,17 @@ const POOLS = {
 };
 const byR = (items, r) => items.filter(c => c.r === r);
 const upOf = p => p.items.find(c => c.id === p.up);
+const pickOne = list => list[Math.floor(Math.random() * list.length)];
+// 出 5 星时：UP 占 UP_SHARE，其余 5 星平分剩下的概率；卡池里只有 UP 一个 5 星时直接给 UP
+function pick5(p) {
+  const up = upOf(p), rest = byR(p.items, 5).filter(c => c !== up);
+  return !rest.length || Math.random() < UP_SHARE ? up : pickOne(rest);
+}
 // 两个池共用可调保底设置，各自独立累计抽数。
 const RATE5_MIN = 0.0008;
 const DEFAULT_PITY5 = 90, MAX_PITY5 = 10000;
 const RATE4 = 0.10;
+const UP_SHARE = 0.5;     // 出 5 星时是 UP 的概率；其余 5 星平分剩下的部分
 const PITY4 = 10;        // 每 10 次必得 4 星或以上
 const RICE_PER_WHALE = 160;
 const pct = x => +(x * 100).toFixed(x < .01 ? 3 : 2) + '%';
@@ -77,7 +101,7 @@ const precisePct = p => (p * 100).toFixed(4).replace(/\.?0+$/, '') + '%';
 /* ================= 存档 ================= */
 const SAVE_KEY = 'ww-gacha-ds-v1';
 // 沿用存档键，补齐双池字段与可调保底；超出新上限的旧计数留到下一抽兑现。
-const SAVE_DEFAULTS = { rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, wpity5: 0, wpity4: 0, wtotal: 0, pool: 'char', history: [], sound: true, owned: {}, hardPity: DEFAULT_PITY5 };
+const SAVE_DEFAULTS = { rice: 911, whale: 10, pity5: 0, pity4: 0, total: 0, wpity5: 0, wpity4: 0, wtotal: 0, pool: 'char', history: [], sound: true, owned: {}, hardPity: DEFAULT_PITY5, fishGear: '' };
 const state = Object.assign({}, SAVE_DEFAULTS, load());
 state.hardPity = validPity(state.hardPity) ? state.hardPity : DEFAULT_PITY5;
 for (const key of ['rice', 'whale', 'pity5', 'pity4', 'total', 'wpity5', 'wpity4', 'wtotal']) {
@@ -85,12 +109,65 @@ for (const key of ['rice', 'whale', 'pity5', 'pity4', 'total', 'wpity5', 'wpity4
 }
 const ITEMS = [...CHARS, ...WEAPONS];
 state.owned = Object.fromEntries(ITEMS.filter(c => Number.isSafeInteger(state.owned?.[c.id]) && state.owned[c.id] > 0).map(c => [c.id, state.owned[c.id]]));
-state.history = Array.isArray(state.history) ? state.history.filter(h => h && Object.hasOwn(POOLS, h.p || 'char') && POOLS[h.p || 'char'].items.some(c => c.id === h.id && c.r === h.r) && Number.isFinite(h.t)).slice(0, 500).map(h => ({ id: h.id, r: h.r, t: h.t, n: Number.isSafeInteger(h.n) && h.n > 0 ? h.n : '', ...(h.p === 'weapon' ? { p: 'weapon' } : {}) })) : [];
+state.history = Array.isArray(state.history) ? state.history.filter(h => h && Object.hasOwn(POOLS, h.p || 'char') && POOLS[h.p || 'char'].items.some(c => c.id === h.id) && [3, 4, 5].includes(h.r) && Number.isFinite(h.t)).slice(0, 500).map(h => ({ id: h.id, r: h.r, t: h.t, n: Number.isSafeInteger(h.n) && h.n > 0 ? h.n : '', ...(h.p === 'weapon' ? { p: 'weapon' } : {}) })) : [];
 state.sound = state.sound !== false;
+state.fishGear = WEAPONS.some(w => w.id === state.fishGear && state.owned[w.id]) ? state.fishGear : '';
 let pool = Object.hasOwn(POOLS, state.pool) ? POOLS[state.pool] : POOLS.char;
 state.pool = pool.key;
 function load() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && typeof s === 'object' && !Array.isArray(s) ? s : {}; } catch (e) { return {}; } }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
+// 重置抽卡记录和仓库：清空求索记录、两个仓库、两个卡池的已求索次数与保底进度，卸下捕鱼装备；米饭、鲸币、首充标记、保底设置、音效和当前卡池保留
+function clearCollection() {
+  Object.assign(state, { history: [], owned: {}, pity5: 0, pity4: 0, total: 0, wpity5: 0, wpity4: 0, wtotal: 0, fishGear: '' });
+}
+
+/* ================= 饭点活动：深海捞饭（规则） ================= */
+// 撒网消耗、冷却、奖励和逃脱率；出鱼概率取角色池的长期出现比例（默认 90 抽保底：5★ 约 1.37%，4★ 约 14.76%）
+const FISH_COST = 1000, FISH_COOLDOWN = 1, FISH_MIN_COOLDOWN = .3;
+const FISH_REWARD = { 3: 1000, 4: 5000, 5: 10000 };
+const FISH_ESCAPE = { 3: .05, 4: .2, 5: .5 };
+const FISH_RATE5 = .0137, FISH_RATE4 = .1476;
+// 武器捕鱼加成：net 网面、hold 牢靠、rice 招财、swift 迅捷、thrift 节俭、lure 引鲸、sleep 安眠
+const PERKS = {
+  net:    { name: '网面', text: v => `渔网范围 +${Math.round(v * 100)}%` },
+  hold:   { name: '牢靠', text: v => `逃脱率 −${Math.round(v * 100)}%` },
+  rice:   { name: '招财', text: v => `米饭奖励 +${Math.round(v * 100)}%` },
+  swift:  { name: '迅捷', text: v => `撒网冷却 −${v} 秒` },
+  thrift: { name: '节俭', text: v => `每网少花 ${v} 米饭` },
+  lure:   { name: '引鲸', text: v => `4★、5★ 出现概率 ×${+(1 + v).toFixed(2)}` },
+  sleep:  { name: '安眠', text: v => `鱼游速 −${Math.round(v * 100)}%` },
+};
+// 当前装备的武器加成；装备的武器已不在仓库时视为未装备
+function fishBonus(gearId = state.fishGear) {
+  const w = WEAPONS.find(w => w.id === gearId && state.owned[w.id]);
+  return w ? w.fish : {};
+}
+// 天气：每种都会改变逃脱率（escape 倍数）和 4★、5★ 的出现概率（rare 倍数），并影响鱼的游速；weight 为出现权重
+const WEATHERS = {
+  clear:   { name: '晴朗',     icon: '☀',  weight: 3, escape: .8,  rare: 1,   speed: 1,    text: '光线充足：逃脱率 −20%' },
+  drizzle: { name: '细雨',     icon: '🌧', weight: 2, escape: 1.1, rare: 1.3, speed: .9,   text: '雨声引鱼：4★、5★ 出现 ×1.3，逃脱率 +10%' },
+  storm:   { name: '雷暴',     icon: '⛈', weight: 1, escape: 1.4, rare: 2,   speed: 1.25, text: '风急浪高：4★、5★ 出现 ×2，逃脱率 +40%，鱼游得更快' },
+  fog:     { name: '大雾',     icon: '🌫', weight: 2, escape: 1.25, rare: 1,  speed: .85,  text: '视线模糊：逃脱率 +25%，鱼游得更慢' },
+  calm:    { name: '风平浪静', icon: '〰', weight: 2, escape: .9,  rare: .85, speed: .8,   text: '水波不兴：逃脱率 −10%，鱼游得更慢，4★、5★ 出现 ×0.85' },
+};
+const NO_WEATHER = { escape: 1, rare: 1, speed: 1 };
+function pickWeather(except) {
+  const keys = Object.keys(WEATHERS).filter(k => k !== except);
+  let x = Math.random() * keys.reduce((n, k) => n + WEATHERS[k].weight, 0);
+  for (const k of keys) { x -= WEATHERS[k].weight; if (x < 0) return k; }
+  return keys[keys.length - 1];
+}
+// 水里刷出一条鱼：先按星级概率（引鲸和天气放大 4★、5★），5★ 沿用角色池的 UP 分配
+function fishRoll(b = {}, w = NO_WEATHER) {
+  const lure = (1 + (b.lure || 0)) * w.rare, x = Math.random();
+  const r = x < FISH_RATE5 * lure ? 5 : x < (FISH_RATE5 + FISH_RATE4) * lure ? 4 : 3;
+  return r === 5 ? pick5(POOLS.char) : pickOne(byR(CHARS, r));
+}
+// 逃脱率：基础 × 天气 × (1 − 牢靠)，最高 95%
+const fishEscape = (r, b = {}, w = NO_WEATHER) => Math.min(.95, FISH_ESCAPE[r] * w.escape * (1 - (b.hold || 0)));
+const fishReward = (r, b = {}) => Math.round(FISH_REWARD[r] * (1 + (b.rice || 0)));
+const fishCost = (b = {}) => FISH_COST - (b.thrift || 0);
+const fishCooldown = (b = {}) => Math.max(FISH_MIN_COOLDOWN, FISH_COOLDOWN - (b.swift || 0));
 
 /* ================= 舞台缩放 ================= */
 const $ = s => document.querySelector(s);
@@ -99,13 +176,15 @@ let U = 1;
 let currentView = 'gacha';
 const inventoryFilters = { characters: { mode: 'owned', rarity: 0 }, weapons: { mode: 'owned', rarity: 0 } };
 function fit() {
-  const portrait = currentView !== 'gacha' && matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
+  const portrait = currentView !== 'gacha' && currentView !== 'fishing' && matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
   const w = portrait ? innerWidth : Math.min(innerWidth, innerHeight * 16 / 9);
   stage.style.width = w + 'px';
   stage.style.height = (portrait ? innerHeight : w * 9 / 16) + 'px';
   U = w / 2000;
   stage.style.setProperty('--u', U + 'px');
   FX.resize();
+  if (typeof FISHING !== 'undefined') FISHING.resize();
+  if (typeof UP_SHOWCASE !== 'undefined') UP_SHOWCASE.resize();
 }
 
 /* ================= 音效（WebAudio 合成） ================= */
@@ -164,6 +243,9 @@ const SFX = (() => {
     tick(i) { tone(660 * Math.pow(1.122, i), 0, .16, 'triangle', .12); },
     summon(long) { noise(0, long ? 3.4 : 2.6, 200, 4200, .22, 1.2); tone(55, 0, long ? 3.5 : 2.7, 'sine', .25, 110); },
     impact() { tone(90, 0, .9, 'sine', .55, 40); noise(0, .5, 3000, 300, .35, .7); },
+    // 捕鱼：网落水的水花声、角色逃脱的下滑音
+    splash() { noise(0, .35, 1800, 300, .22, .8); tone(220, 0, .2, 'sine', .12, 90); },
+    escape() { tone(900, 0, .3, 'triangle', .1, 260); },
     // 出金开局提示：一串快速上行的高音铃
     goldHint() { [1568, 1976, 2349, 2637, 3136].forEach((f, i) => { tone(f, i * .05, .9, 'triangle', .09); tone(f * 1.5, i * .05 + .02, .6, 'sine', .03); }); },
     gold() { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => { tone(f, i * .07, 1.6, 'triangle', .14); tone(f * 2, i * .07 + .02, 1.2, 'sine', .05); }); },
@@ -612,8 +694,7 @@ function rollOne() {
   else r = 3;
   if (r === 5) { state[P5] = 0; state[P4] = 0; }
   else if (r === 4) state[P4] = 0;
-  const list = byR(pool.items, r);
-  const c = list[Math.floor(Math.random() * list.length)];
+  const c = r === 5 ? pick5(pool) : pickOne(byR(pool.items, r));
   const isNew = !state.owned[c.id];
   state.owned[c.id] = (state.owned[c.id] || 0) + 1;
   // 角色池记录不带 p 字段，与旧存档保持一致；武器池记录 p: 'weapon'
@@ -657,7 +738,8 @@ function doPull(n) {
 function showReveal() {
   phase = 'reveal';
   const c = results[idx], rv = $('#reveal');
-  rv.className = 'on r' + c.r + (c.kind === 'weapon' ? ' wp' : '');
+  // 「小小」系列登场时立绘缩到画面高度的一半
+  rv.className = 'on r' + c.r + (c.kind === 'weapon' ? ' wp' : '') + (c.id.startsWith('mini-') ? ' mini' : '');
   rv.style.setProperty('--rc', RC[c.r]);
   const d1 = c.r === 5 ? 1.3 : c.r === 4 ? .6 : .45;
   rv.style.setProperty('--d1', d1 + 's');
@@ -716,6 +798,8 @@ function nextReveal() {
   else closeFx();
 }
 
+// 结算卡上的名字：「小小」系列省掉“小小”二字
+const cardName = c => c.id.startsWith('mini-') ? c.name.replace(/^小小/, '') : c.name;
 function showSummary() {
   phase = 'summary';
   const has5 = results.some(c => c.r === 5);
@@ -726,8 +810,10 @@ function showSummary() {
   results.forEach((c, i) => {
     const w = document.createElement('div'); w.className = 'cardwrap r' + c.r;
     const delay = .15 + i * .09;
-    w.innerHTML = `<div class="card r${c.r}${c.kind === 'weapon' ? ' wp' : ''}" style="--rc:${RC[c.r]};animation-delay:${delay}s">
-      <img src="${itemSrc(c)}" alt=""><div class="cs">${'★'.repeat(c.r)}</div><div class="cn">${c.name}</div></div>`;
+    // 「小小」系列：卡面人物缩到一半，卡上名字省掉“小小”二字；星级和名字放在同一个底部块里，名字换行也不会压到星级
+    const mini = c.id.startsWith('mini-');
+    w.innerHTML = `<div class="card r${c.r}${c.kind === 'weapon' ? ' wp' : ''}${mini ? ' mini' : ''}" style="--rc:${RC[c.r]};animation-delay:${delay}s">
+      <img src="${itemSrc(c)}" alt=""><div class="cmeta"><div class="cs">${'★'.repeat(c.r)}</div><div class="cn${cardName(c).length > 7 ? ' long' : ''}">${cardName(c)}</div></div></div>`;
     box.appendChild(w);
     // 卡片翻开时：高星级迸光
     setTimeout(() => {
@@ -756,6 +842,7 @@ function closeFx() {
   FX.stop();
   $('#fx').classList.remove('on');
   $('#reveal').className = ''; $('#summary').classList.remove('on');
+  UP_SHOWCASE.refresh();
   const got5 = results.find(c => c.r === 5);
   if (got5) toast(`恭喜获得 5★ ${got5.name}！深海的金光为你而亮`);
 }
@@ -763,7 +850,7 @@ function closeFx() {
 /* ================= HUD ================= */
 let shown = { rice: state.rice, whale: state.whale };
 function renderHud(bump) {
-  animNum('#riceNum, #gachaRiceNum', 'rice', bump);
+  animNum('#riceNum, #gachaRiceNum, #fishRiceNum', 'rice', bump);
   animNum('#whaleNum, #gachaWhaleNum', 'whale', bump);
   $('#pity').innerHTML = `${pool.noun}池已求索 <b>${state[pool.total]}</b> 次　下一抽出金概率 <b>${pct(rate5(state[pool.pity5] + 1))}</b>　距保底 <b>${Math.max(1, state.hardPity - state[pool.pity5])}</b> 次`;
   document.querySelectorAll('.gacha-pity-number').forEach(el => {
@@ -775,22 +862,25 @@ function renderHud(bump) {
 
 /* ================= 角色仓库与武器仓库 ================= */
 function showView(view) {
-  if (busy || !['gacha', 'characters', 'weapons'].includes(view)) return;
+  if (busy || !['gacha', 'characters', 'weapons', 'fishing'].includes(view)) return;
   closeModal();
+  if (currentView === 'fishing' && view !== 'fishing') FISHING.leave();
   currentView = view;
   stage.dataset.view = view;
-  for (const name of ['gacha', 'characters', 'weapons']) $('#' + name + 'View').hidden = name !== view;
+  for (const name of ['gacha', 'characters', 'weapons', 'fishing']) $('#' + name + 'View').hidden = name !== view;
   document.querySelectorAll('.main-nav [data-view]').forEach(b => {
     const active = b.dataset.view === view;
     b.classList.toggle('active', active);
     if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
-  document.title = view === 'gacha' ? `${pool.banner} · ${pool.tab}` : `${view === 'weapons' ? '武器' : '角色'}仓库 · 深海的嘟囔`;
+  document.title = view === 'gacha' ? `${pool.banner} · ${pool.tab}` : view === 'fishing' ? '深海捞饭 · 饭点活动' : `${view === 'weapons' ? '武器' : '角色'}仓库 · 深海的嘟囔`;
   fit();
-  if (view !== 'gacha') renderInventory();
+  if (view === 'fishing') FISHING.enter();
+  else if (view === 'gacha') UP_SHOWCASE.refresh();
+  else if (view !== 'gacha') renderInventory();
 }
 function renderInventory() {
-  if (currentView === 'gacha') return;
+  if (currentView !== 'characters' && currentView !== 'weapons') return;
   const root = $('#' + currentView + 'View'), filter = inventoryFilters[currentView];
   const items = currentView === 'weapons' ? WEAPONS : CHARS, noun = currentView === 'weapons' ? '武器' : '角色';
   const owned = items.filter(c => state.owned[c.id]);
@@ -827,8 +917,12 @@ function openModal(title, html, small) {
   $('#panelBody').innerHTML = html;
   $('#panel').className = 'panel' + (small ? ' sm' : '');
   $('#mask').classList.add('open');
+  if (currentView === 'fishing') FISHING.pauseForModal();
 }
-function closeModal() { $('#mask').classList.remove('open'); }
+function closeModal() {
+  $('#mask').classList.remove('open');
+  if (currentView === 'fishing') FISHING.resumeAfterModal();
+}
 let confirmCb = null;
 function confirmBox(title, html, okText, cb) {
   confirmCb = cb;
@@ -883,6 +977,12 @@ function updateEx() {
   $('#exCost').textContent = exQty * RICE_PER_WHALE; $('#exGet').textContent = exQty;
 }
 
+// 5 星说明：只有 UP 一个时写“X（UP）”，多个时写出 UP 与其余 5 星的分配
+function fiveText(P) {
+  const up = upOf(P), rest = byR(P.items, 5).filter(c => c !== up);
+  if (!rest.length) return `${up.name}（UP）`;
+  return `出 5 星时 ${pct(UP_SHARE)} 为 ${up.name}（UP），其余 ${pct(1 - UP_SHARE)} 由 ${rest.map(c => c.name).join('、')} 平分`;
+}
 function openDetails() {
   const P = pool, up = upOf(P), p4 = state[P.pity4], p5 = state[P.pity5];
   const cells = r => byR(P.items, r).map(c => `<div class="pc${c.kind === 'weapon' ? ' wp' : ''}" style="--c:${r === 5 ? '#d9a63c' : r === 4 ? '#9b6ad6' : '#5c8fd6'}"><img src="${itemSrc(c)}" alt=""><span>${c.name}</span></div>`).join('');
@@ -890,7 +990,7 @@ function openDetails() {
   openModal(`深度思考 · ${P.tab}`, `
     <div class="sec">求索概率</div>
     <table class="rate-table"><tr><th>星级</th><th>${P.noun}</th><th>概率</th></tr>
-      <tr><td class="stars-s">★★★★★</td><td>${up.name}（UP）</td><td><b>基础 ${pct(RATE5_MIN)}，含保底 ${precisePct(stats.overall)}</b></td></tr>
+      <tr><td class="stars-s">★★★★★</td><td>${fiveText(P)}</td><td><b>基础 ${pct(RATE5_MIN)}，含保底 ${precisePct(stats.overall)}</b></td></tr>
       <tr><td class="stars-s">★★★★</td><td>${byR(P.items, 4).map(c => c.name).join('、')}</td><td>未出金时 ${pct(RATE4)}</td></tr>
       <tr><td class="stars-s">★★★</td><td>${byR(P.items, 3).map(c => c.name).join('、')}</td><td>其余</td></tr></table>
     <div class="sec">出金概率递增</div>
@@ -906,7 +1006,7 @@ function openDetails() {
       · 修改保底保留两个池的当前计数；已达到新上限时，下一抽必得 5 星<br>
       · 1 次求索消耗 1 枚鲸币；鲸币不足时可用 ${RICE_PER_WHALE} 米饭兑换 1 枚</div>
     <div class="row"><button class="btn" data-act="settings">调整保底设置</button></div>
-    <div class="sec">5★ UP</div><div class="pool">${cells(5)}</div>
+    <div class="sec">5★（${up.name} UP）</div><div class="pool">${cells(5)}</div>
     <div class="sec">4★</div><div class="pool">${cells(4)}</div>
     <div class="sec">3★</div><div class="pool">${cells(3)}</div>`);
 }
@@ -932,7 +1032,7 @@ function openItem(id) {
   const c = ITEMS.find(c => c.id === id);
   if (!c) return;
   const isW = c.kind === 'weapon', owner = CHARS.find(o => o.id === c.owner), count = state.owned[c.id] || 0;
-  const tags = [count ? '已获得 · 持有 ×' + count : '尚未获得', ...(c.r === 5 ? ['限定 UP'] : []), ...(isW ? [c.type, owner ? owner.name + '专武' : '通用'] : [])];
+  const tags = [count ? '已获得 · 持有 ×' + count : '尚未获得', ...(Object.values(POOLS).some(p => p.up === c.id) ? ['限定 UP'] : []), ...(isW ? [c.type, owner ? owner.name + '专武' : '通用'] : [])];
   const desc = c.id !== 'ds' && c.id !== 'whalefall' ? c.sub : isW
     ? '以白瓷鲸骨为柄、鲸尾为勺的饭勺法杖，勺心托着一团会发光的米饭。传说鲸鱼沉入深海后会养活一整片海底——这把勺子也一样，盛出来的饭永远够吃。'
     : '深海里长大的鲸鱼女仆，头上的鳍会随心情扇动。平时慢吞吞地嘟囔，一旦开始深度思考就停不下来——前提是先给她吃饱大白米饭。';
@@ -1020,11 +1120,26 @@ document.addEventListener('click', e => {
       toast(`兑换成功，获得 ${exQty} 枚鲸币`); closeModal(); break;
     }
     case 'tab': {
+      if (b.dataset.tab === '1') { showView('fishing'); break; }
       const key = { 0: 'char', 3: 'weapon' }[b.dataset.tab];
       if (key) switchPool(key);
       else toast(`「${b.title}」卡池筹备中，敬请期待`);
       break;
     }
+    case 'fish-pause': FISHING.togglePause(); break;
+    case 'fish-settle': openFishSettle(); break;
+    case 'fish-info': openFishInfo(); break;
+    case 'fish-gear': openFishGear(); break;
+    case 'fish-equip': {
+      state.fishGear = b.dataset.id; save(); FISHING.renderGear(); openFishGear();
+      const w = WEAPONS.find(w => w.id === b.dataset.id);
+      toast(w ? `已装备「${w.name}」` : '已卸下装备');
+      break;
+    }
+    case 'fish-resume': closeModal(); break;
+    case 'fish-restart': FISHING.restart(); closeModal(); break;
+    case 'fish-exit': FISHING.end(); closeModal(); showView('gacha'); break;
+    case 'fish-go-weapon': FISHING.end(); closeModal(); showView('gacha'); switchPool('weapon'); break;
     case 'details': openDetails(); break;
     case 'history': openHistory(); break;
     case 'preview': openPreview(); break;
@@ -1036,6 +1151,12 @@ document.addEventListener('click', e => {
       }
       break;
     case 'toggle-sound': state.sound = !state.sound; save(); openSettings(); break;
+    case 'reset-collection':
+      if (busy) break;
+      confirmBox('重置抽卡记录', `是否重置当前抽卡记录和仓库？<br><span class="note">将清空求索记录、角色仓库、武器仓库，以及两个卡池的已求索次数和保底进度。<br>米饭、鲸币和保底设置会保留。</span>`, '确认重置', () => {
+        clearCollection(); save(); renderHud(); toast('抽卡记录和仓库已重置');
+      });
+      break;
     case 'reset':
       confirmBox('重置存档', '将清空角色、武器、货币、两个卡池的计数和求索记录，保底恢复为 90 抽，确定吗？', '确定重置', () => {
         try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
@@ -1059,7 +1180,7 @@ document.addEventListener('change', e => {
   if (e.target.matches('.inventory-rarity') && currentView !== 'gacha') { inventoryFilters[currentView].rarity = Number(e.target.value); renderInventory(); }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if ($('#mask').classList.contains('open')) closeModal(); else if (phase !== 'idle') skip(); }
+  if (e.key === 'Escape') { if ($('#mask').classList.contains('open')) closeModal(); else if (phase !== 'idle') skip(); else if (currentView === 'fishing') FISHING.togglePause(); }
   if ((e.key === ' ' || e.key === 'Enter') && phase === 'reveal') { e.preventDefault(); nextReveal(); }
 });
 
@@ -1085,6 +1206,550 @@ stage.addEventListener('pointerdown', e => {
   const r = stage.getBoundingClientRect();
   spawnRipple(e.clientX - r.left, e.clientY - r.top);
 }, true);
+
+/* ================= 饭点活动：深海捞饭（画面与操作） ================= */
+// 五种水下光景：开局按本地时间选，之后每隔 90～150 秒（只算未暂停的时间）随机换一种
+const FISH_SCENES = { dawn: '清晨', day: '白天', dusk: '黄昏', night: '夜晚', murk: '浑水' };
+const PERK_ICON = { net: 'perk-net', hold: 'perk-hold', rice: 'perk-rice', swift: 'perk-swift', thrift: 'perk-thrift', lure: 'perk-lure', sleep: 'perk-sleep' };
+const perkRows = b => Object.entries(b || {}).map(([k, v]) => `<div class="perk"><img src="${img('fishing/' + PERK_ICON[k] + '.png')}" alt="">${PERKS[k].name}：${PERKS[k].text(v)}</div>`).join('');
+const fmtTime = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60, p = v => String(v).padStart(2, '0'); return (h ? h + ':' + p(m) : p(m)) + ':' + p(x); };
+
+const FISHING = (() => {
+  const root = $('#fishingView'), cv = $('#fishCanvas'), g = cv.getContext('2d');
+  const sceneEls = [...root.querySelectorAll('.fish-scene')];
+  const IMG = {};
+  for (const n of ['net-open', 'net-full', 'net-torn', 'net-shell', 'launcher-base', 'launcher-barrel', 'bubble-3', 'bubble-4', 'bubble-5', 'shadow-whale', 'shadow-fish', 'shadow-fish2']) {
+    IMG[n] = Object.assign(new Image(), { src: img(`fishing/${n}.png`) });
+  }
+  const heads = {};
+  const headOf = c => heads[c.id] || (heads[c.id] = Object.assign(new Image(), { src: charSrc(c.id) }));
+  CHARS.forEach(headOf);                       // 先把所有角色头像载好，避免刚游进来时是空泡
+  const ok = im => im && im.complete && im.naturalWidth;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const ease = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
+
+  let W = 1, H = 1, dpr = 1, k = 1, raf = 0, last = 0, active = false, paused = true, autoPaused = false;
+  let S = null;                                   // 本局：统计、计时、天色
+  let fishes = [], shells = [], nets = [], parts = [], texts = [], shadows = [], rains = [], flash = 0;
+  let aim = { x: 1000, y: 500 }, recoil = 0, spawnIn = 0, shadowIn = 0;
+
+  const PIVOT = () => ({ x: 1000 * k, y: 1062 * k });
+  const BARREL_LEN = 290, BARREL_W = 74;
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = root.clientWidth || stage.clientWidth || 1; H = root.clientHeight || stage.clientHeight || 1;
+    k = W / 2000;
+    cv.width = W * dpr; cv.height = H * dpr;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // ---------- 本局 ----------
+  function newSession() {
+    S = { t: 0, casts: 0, spent: 0, earned: 0, caught: { 3: 0, 4: 0, 5: 0 }, escaped: 0, fives: [], cooldownUntil: 0, scene: '', nextScene: 0, weather: '', nextWeather: 0 };
+    fishes = []; shells = []; nets = []; parts = []; texts = []; shadows = []; rains = []; flash = 0;
+    setWeather(pickWeather(), true);
+    $('#fishFeed').innerHTML = '';
+    const h = new Date().getHours();
+    setScene(h >= 5 && h < 8 ? 'dawn' : h >= 8 && h < 16 ? 'day' : h >= 16 && h < 19 ? 'dusk' : 'night', true);
+    for (let i = 0; i < 7; i++) spawnFish(true);
+    for (let i = 0; i < 2; i++) spawnShadow(true);
+    renderStats();
+  }
+  function setScene(key, instant) {
+    S.scene = key; S.nextScene = S.t + rnd(90, 150);
+    const [front, back] = sceneEls[0].classList.contains('on') ? [sceneEls[1], sceneEls[0]] : [sceneEls[0], sceneEls[1]];
+    front.src = img(`fishing/scene-${key}.jpg`);
+    if (instant) { front.style.transition = 'none'; back.style.transition = 'none'; }
+    front.classList.add('on'); back.classList.remove('on');
+    if (instant) { void front.offsetWidth; front.style.transition = ''; back.style.transition = ''; }
+    $('#fishSceneName').textContent = `水下 · ${FISH_SCENES[key]}`;
+  }
+  // 天气：独立于水下光景，每隔 70～130 秒（只算未暂停的时间）随机换一种
+  function setWeather(key, quiet) {
+    S.weather = key; S.nextWeather = S.t + rnd(70, 130);
+    const w = WEATHERS[key];
+    $('#fishWeather').innerHTML = `<b>${w.icon} ${w.name}</b><span>${w.text}</span>`;
+    $('#fishWeather').dataset.weather = key;
+    if (!quiet) {
+      texts.push({ x: W / 2, y: H * .36, s: `天气变化：${w.icon} ${w.name}`, c: '#ffe8a8', t: 0, life: 2.4, size: 48 });
+      texts.push({ x: W / 2, y: H * .36 + 54 * k, s: w.text, c: '#ffffff', t: 0, life: 2.4, size: 28 });
+      if (key === 'storm') flash = 1;
+    }
+  }
+  const curWeather = () => (S && WEATHERS[S.weather]) || NO_WEATHER;
+  function nextScene() {
+    const keys = Object.keys(FISH_SCENES).filter(x => x !== S.scene);
+    setScene(keys[Math.floor(Math.random() * keys.length)]);
+  }
+
+  // ---------- 生成 ----------
+  function spawnFish(initial) {
+    const b = fishBonus(), c = fishRoll(b, curWeather()), r = c.r;
+    const R = (r === 5 ? 118 : r === 4 ? 100 : 86) * k;
+    const dir = Math.random() < .5 ? 1 : -1;
+    const speed = (r === 5 ? rnd(200, 250) : r === 4 ? rnd(140, 190) : rnd(95, 140)) * k;
+    const x = initial ? rnd(380, 1620) * k : dir > 0 ? -R * 1.6 : W + R * 1.6;
+    const y = rnd(260, 760) * k;
+    fishes.push({ c, r, R, x, y, y0: y, vx: dir * speed, speed, ph: rnd(0, 6.28), amp: rnd(14, 44) * k, state: 'swim', s: 1, a: 1, t: 0 });
+    headOf(c);
+  }
+  function spawnShadow(initial) {
+    const names = ['shadow-whale', 'shadow-fish', 'shadow-fish2'], n = names[Math.floor(Math.random() * names.length)];
+    const dir = Math.random() < .5 ? 1 : -1, w = (n === 'shadow-whale' ? rnd(420, 560) : rnd(200, 300)) * k;
+    shadows.push({ n, w, dir, x: initial ? rnd(200, 1800) * k : dir > 0 ? -w : W + w, y: rnd(260, 900) * k, vx: dir * rnd(28, 55) * k, ph: rnd(0, 6.28) });
+  }
+
+  // ---------- 撒网 ----------
+  function cast(x, y) {
+    if (!S || paused) return;
+    const b = fishBonus(), cost = fishCost(b);
+    if (S.t < S.cooldownUntil) { texts.push({ x, y, s: '冷却中', c: '#cfe6ff', t: 0, life: .7, size: 26 }); return; }
+    if (state.rice < cost) { toast(`米饭不足，撒一网需要 ${cost} 米饭`); return; }
+    if (y > 1000 * k) y = 1000 * k;
+    state.rice -= cost; S.spent += cost; S.casts++; S.cooldownUntil = S.t + fishCooldown(b);
+    save(); renderHud(); renderStats();
+    const P = PIVOT(), ang = Math.atan2(y - P.y, x - P.x);
+    const tip = { x: P.x + Math.cos(ang) * BARREL_LEN * .82 * k, y: P.y + Math.sin(ang) * BARREL_LEN * .82 * k };
+    const dist = Math.hypot(x - tip.x, y - tip.y);
+    shells.push({ x0: tip.x, y0: tip.y, x1: x, y1: y, t: 0, dur: Math.min(.55, Math.max(.18, dist / (2000 * k))), spin: rnd(-6, 6) });
+    recoil = 1; aim = { x, y };
+    SFX.whoosh();
+  }
+  function openNet(x, y) {
+    const b = fishBonus(), R = 125 * (1 + (b.net || 0)) * k;
+    const net = { x, y, R, t: 0, caught: 0, escaped: 0, done: false };
+    nets.push(net);
+    SFX.splash();
+    for (let i = 0; i < 26; i++) {
+      const a = rnd(0, Math.PI * 2), v = rnd(60, 220) * k;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, dec: rnd(1.4, 2.4), sz: rnd(2, 5) * k, rgb: '210,240,255' });
+    }
+    for (const f of fishes) {
+      if (f.state !== 'swim' || Math.hypot(f.x - x, f.y - y) > R + f.R * .45) continue;
+      if (Math.random() < fishEscape(f.r, b, curWeather())) {
+        f.state = 'escape'; f.t = 0; net.escaped++; S.escaped++;
+        const away = Math.atan2(f.y - y, f.x - x);
+        f.vx = Math.cos(away) * 760 * k; f.vy = Math.sin(away) * 760 * k;
+        texts.push({ x: f.x, y: f.y - f.R, s: '逃走了！', c: f.r === 5 ? '#ffd76a' : f.r === 4 ? '#e2c6ff' : '#cfe6ff', t: 0, life: 1.1, size: 30 });
+        SFX.escape();
+      } else {
+        f.state = 'caught'; f.t = 0; f.net = net; f.x0 = f.x; f.y0c = f.y; net.caught++;
+      }
+    }
+    renderStats();
+  }
+  function landCatch(f) {
+    const b = fishBonus(), reward = fishReward(f.r, b);
+    const isNew = !state.owned[f.c.id];
+    state.owned[f.c.id] = (state.owned[f.c.id] || 0) + 1;     // 捞到的角色进入角色仓库（不写求索记录）
+    state.rice += reward; S.earned += reward; S.caught[f.r]++;
+    if (f.r === 5) S.fives.push(f.c.name);
+    save(); renderHud(true); renderStats();
+    texts.push({ x: f.x, y: f.y - 30 * k, s: `+${reward}`, c: f.r === 5 ? '#ffd76a' : f.r === 4 ? '#e9d2ff' : '#ffffff', t: 0, life: 1.3, size: f.r === 5 ? 46 : 36 });
+    flyRice(f.x, f.y);
+    feed(f, reward, isNew);
+    const rgb = RC[f.r];
+    for (let i = 0; i < (f.r === 5 ? 90 : f.r === 4 ? 40 : 16); i++) {
+      const a = rnd(0, Math.PI * 2), v = rnd(80, f.r === 5 ? 520 : 300) * k;
+      parts.push({ x: f.x, y: f.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, dec: rnd(.8, 1.6), sz: rnd(2, 6) * k, rgb });
+    }
+    if (f.r === 5) { SFX.gold(); flashEl(.45, 'radial-gradient(circle, rgba(255,226,140,.9), rgba(255,190,70,.35) 55%, transparent)'); }
+    else if (f.r === 4) SFX.purple();
+    SFX.coin();
+  }
+  function flyRice(x, y) {
+    const target = $('#fishRiceNum').getBoundingClientRect(), base = stage.getBoundingClientRect(), r = cv.getBoundingClientRect();
+    const el = document.createElement('img');
+    el.className = 'fish-fly'; el.src = img('icons/rice.png');
+    el.style.left = (r.left - base.left + x - 24 * k) + 'px'; el.style.top = (r.top - base.top + y - 24 * k) + 'px';
+    stage.appendChild(el);
+    requestAnimationFrame(() => {
+      el.style.transform = `translate(${target.left - r.left - x + target.width / 2}px, ${target.top - r.top - y + target.height / 2}px) scale(.6)`;
+      el.style.opacity = '.2';
+    });
+    setTimeout(() => el.remove(), 800);
+  }
+  function feed(f, reward, isNew) {
+    const box = $('#fishFeed'), item = document.createElement('div');
+    item.className = 'fish-feed-item r' + f.r; item.style.setProperty('--rc', RC[f.r]);
+    item.innerHTML = `<img src="${charSrc(f.c.id)}" alt=""><b>${f.c.name}</b>${isNew ? '<i>NEW</i>' : ''}<em>+${reward}</em>`;
+    box.prepend(item);
+    while (box.children.length > 5) box.lastChild.remove();
+    setTimeout(() => { item.classList.add('out'); setTimeout(() => item.remove(), 400); }, 6000);
+  }
+
+  // ---------- 更新 ----------
+  function update(dt) {
+    S.t += dt;
+    if (S.t >= S.nextScene) nextScene();
+    if (S.t >= S.nextWeather) setWeather(pickWeather(S.weather));
+    const b = fishBonus(), wx = curWeather(), slow = (1 - (b.sleep || 0)) * wx.speed;
+    spawnIn -= dt;
+    if (spawnIn <= 0) { if (fishes.filter(f => f.state === 'swim').length < 9) spawnFish(false); spawnIn = rnd(.5, 1.3); }
+    shadowIn -= dt;
+    if (shadowIn <= 0) { if (shadows.length < 3) spawnShadow(false); shadowIn = rnd(4, 9); }
+    for (const sh of shadows) { sh.x += sh.vx * dt; sh.ph += dt; }
+    shadows = shadows.filter(sh => sh.x > -sh.w * 1.2 && sh.x < W + sh.w * 1.2);
+    for (const f of fishes) {
+      f.t += dt;
+      if (f.state === 'swim') {
+        f.x += f.vx * slow * dt;
+        f.y = f.y0 + Math.sin(f.ph + f.t * 1.7) * f.amp;
+        if (f.r === 5 && Math.random() < .6) parts.push({ x: f.x - Math.sign(f.vx) * f.R * .8, y: f.y + rnd(-f.R, f.R) * .4, vx: -f.vx * .1, vy: rnd(-20, 20) * k, life: 1, dec: 1.8, sz: rnd(2, 4) * k, rgb: '255,214,110' });
+      } else if (f.state === 'escape') {
+        // 被惊开后冲出一段，减速，再回到池子里正常游动，可以继续捞
+        const damp = Math.pow(.04, dt);
+        f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= damp; f.vy *= damp;
+        if (f.t > .7) {
+          f.x = Math.min(W - f.R, Math.max(f.R, f.x));
+          f.y = Math.min(780 * k, Math.max(240 * k, f.y));
+          const dir = f.x < W * .2 ? 1 : f.x > W * .8 ? -1 : Math.sign(f.vx) || 1;
+          f.state = 'swim'; f.vx = dir * f.speed; f.y0 = f.y; f.t = 0; f.ph = 0;
+        }
+      } else if (f.state === 'caught') {
+        const u = ease(f.t / .45);
+        f.x = f.x0 + (f.net.x - f.x0) * u; f.y = f.y0c + (f.net.y - f.y0c) * u; f.s = 1 - u * .55;
+        if (f.t >= .45 && !f.landed) { f.landed = true; landCatch(f); }
+        f.a = f.t > .45 ? Math.max(0, 1 - (f.t - .45) / .3) : 1;
+      }
+    }
+    fishes = fishes.filter(f => f.state === 'swim' ? f.x > -f.R * 3 && f.x < W + f.R * 3 : f.a > 0);
+    for (const s of shells) {
+      s.t += dt;
+      if (s.t >= s.dur && !s.done) { s.done = true; openNet(s.x1, s.y1); }
+      if (!s.done && Math.random() < .9) {
+        const u = s.t / s.dur, x = s.x0 + (s.x1 - s.x0) * u, y = s.y0 + (s.y1 - s.y0) * u;
+        parts.push({ x, y, vx: rnd(-30, 30) * k, vy: rnd(-30, 30) * k, life: 1, dec: 2.6, sz: rnd(3, 6) * k, rgb: '180,225,255' });
+      }
+    }
+    shells = shells.filter(s => !s.done);
+    for (const n of nets) n.t += dt;
+    nets = nets.filter(n => n.t < 1.3);
+    for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .96; p.vy *= .96; p.life -= p.dec * dt; }
+    parts = parts.filter(p => p.life > 0);
+    if (Math.random() < .35) parts.push({ x: rnd(0, W), y: H + 10, vx: rnd(-8, 8) * k, vy: -rnd(40, 90) * k, life: 1, dec: .18, sz: rnd(1.5, 3.5) * k, rgb: '220,245,255', bubble: true });
+    // 雨点在水面上的涟漪
+    const rainRate = S.weather === 'storm' ? 26 : S.weather === 'drizzle' ? 9 : 0;
+    if (rainRate && Math.random() < rainRate * dt) rains.push({ x: rnd(0, W), y: rnd(0, H), t: 0, life: rnd(.8, 1.4), r: rnd(18, 46) * k });
+    for (const r of rains) r.t += dt;
+    rains = rains.filter(r => r.t < r.life);
+    if (S.weather === 'storm' && Math.random() < dt / 7) flash = 1;      // 雷暴：平均 7 秒一道闪电
+    flash = Math.max(0, flash - dt * 2.5);
+    for (const t of texts) t.t += dt;
+    texts = texts.filter(t => t.t < t.life);
+    recoil = Math.max(0, recoil - dt * 5);
+    $('#fishTimer').textContent = fmtTime(S.t);
+  }
+
+  // ---------- 绘制 ----------
+  function glow(x, y, r, rgb, a) {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+  function drawImg(im, x, y, w, rot = 0, alpha = 1, flip = false) {
+    if (!ok(im)) return;
+    const h = w * im.naturalHeight / im.naturalWidth;
+    g.save(); g.globalAlpha = alpha; g.translate(x, y); if (rot) g.rotate(rot); if (flip) g.scale(-1, 1);
+    g.drawImage(im, -w / 2, -h / 2, w, h); g.restore();
+  }
+  function caustics(now) {
+    // 水面光斑：几团缓慢游走的柔光，夜晚和浑水更暗
+    const dim = S.scene === 'night' ? .35 : S.scene === 'murk' ? .45 : 1;
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 7; i++) {
+      const x = W * (.5 + .45 * Math.sin(now / 9000 + i * 1.7)), y = H * (.45 + .38 * Math.cos(now / 11000 + i * 2.3));
+      glow(x, y, (180 + 60 * Math.sin(now / 3000 + i)) * k, '200,240,255', .05 * dim);
+    }
+    if (S.scene === 'night') {
+      for (let i = 0; i < 18; i++) {
+        const x = W * ((i * .137 + now / 90000) % 1), y = H * (.15 + ((i * .271) % .8)), tw = .5 + .5 * Math.sin(now / 500 + i * 3);
+        glow(x, y, 7 * k, '120,255,220', .5 * tw);
+      }
+    }
+    g.globalCompositeOperation = 'source-over';
+  }
+  function drawFish(f, now) {
+    const R = f.R * f.s, x = f.x, y = f.y;
+    g.save(); g.globalAlpha = f.a;
+    if (f.r >= 4) { g.globalCompositeOperation = 'lighter'; glow(x, y, R * (f.r === 5 ? 2.1 : 1.6), RC[f.r], f.r === 5 ? .55 : .35); g.globalCompositeOperation = 'source-over'; }
+    const im = headOf(f.c);
+    if (ok(im)) {
+      g.save(); g.beginPath(); g.arc(x, y, R * .7, 0, Math.PI * 2); g.clip();
+      g.fillStyle = 'rgba(255,255,255,.25)'; g.fill();
+      const sw = im.naturalWidth * .78, sx = im.naturalWidth * .11;
+      g.drawImage(im, sx, 0, sw, sw, x - R * .78, y - R * .72, R * 1.56, R * 1.56);
+      g.restore();
+    }
+    drawImg(IMG['bubble-' + f.r], x, y, R * 2.25, Math.sin(now / 900 + f.ph) * .15, 1);
+    g.restore();
+  }
+  function drawWeather(now, layer) {
+    const wk = S.weather;
+    if (layer === 'under') {
+      if (wk === 'clear') {
+        // 晴朗：从左上斜照下来的几道光柱
+        g.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 4; i++) {
+          const x = W * (.18 + i * .2 + .03 * Math.sin(now / 4000 + i)), a = .06 + .03 * Math.sin(now / 1800 + i * 2);
+          const gr = g.createLinearGradient(x, 0, x + W * .12, H);
+          gr.addColorStop(0, `rgba(255,248,215,${a})`); gr.addColorStop(1, 'rgba(255,248,215,0)');
+          g.fillStyle = gr; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 90 * k, 0); g.lineTo(x + W * .16, H); g.lineTo(x + W * .1, H); g.closePath(); g.fill();
+        }
+        g.globalCompositeOperation = 'source-over';
+      } else if (wk === 'calm') {
+        g.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 14; i++) {
+          const x = W * ((i * .173 + now / 60000) % 1), y = H * (.2 + ((i * .311) % .65)), a = .25 + .25 * Math.sin(now / 700 + i * 2);
+          glow(x, y, 9 * k, '255,250,225', a);
+        }
+        g.globalCompositeOperation = 'source-over';
+      }
+      return;
+    }
+    // 盖在鱼上面的一层
+    if (wk === 'drizzle' || wk === 'storm') {
+      if (wk === 'storm') { g.fillStyle = 'rgba(4,12,32,.28)'; g.fillRect(0, 0, W, H); }
+      g.lineWidth = 2.6 * k;
+      for (const r of rains) {
+        const u = r.t / r.life;
+        g.strokeStyle = `rgba(235,247,255,${.85 * (1 - u)})`;
+        g.beginPath(); g.ellipse(r.x, r.y, r.r * u, r.r * u * .6, 0, 0, Math.PI * 2); g.stroke();
+        if (u > .25) { g.beginPath(); g.ellipse(r.x, r.y, r.r * (u - .25), r.r * (u - .25) * .6, 0, 0, Math.PI * 2); g.stroke(); }
+      }
+    } else if (wk === 'fog') {
+      g.fillStyle = 'rgba(225,232,240,.24)'; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 5; i++) {
+        const x = W * ((i * .27 + now / 70000) % 1.2 - .1), y = H * (.25 + i * .13);
+        const gr = g.createRadialGradient(x, y, 0, x, y, 380 * k);
+        gr.addColorStop(0, 'rgba(240,244,248,.28)'); gr.addColorStop(1, 'rgba(240,244,248,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(x, y, 380 * k, 0, Math.PI * 2); g.fill();
+      }
+    }
+    if (flash > 0) { g.fillStyle = `rgba(235,242,255,${flash * .55})`; g.fillRect(0, 0, W, H); }
+  }
+  function draw(now) {
+    g.clearRect(0, 0, W, H);
+    caustics(now);
+    drawWeather(now, 'under');
+    for (const sh of shadows) drawImg(IMG[sh.n], sh.x, sh.y + Math.sin(sh.ph * .8) * 12 * k, sh.w, 0, .55, sh.dir < 0);
+    for (const n of nets) {
+      const open = ease(n.t / .18), fade = n.t > .75 ? Math.max(0, 1 - (n.t - .75) / .5) : 1;
+      const im = n.t < .5 ? IMG['net-open'] : n.caught ? IMG['net-full'] : n.escaped ? IMG['net-torn'] : IMG['net-open'];
+      const sc = n.caught && n.t > .5 ? 1 - (n.t - .5) * .5 : 1;
+      drawImg(im, n.x, n.y, n.R * 2.1 * open * sc, n.t * .4, .85 * fade);
+    }
+    for (const f of fishes) drawFish(f, now);
+    drawWeather(now, 'over');
+    g.globalCompositeOperation = 'lighter';
+    for (const p of parts) {
+      if (p.bubble) { g.strokeStyle = `rgba(${p.rgb},${.35 * p.life})`; g.lineWidth = 1.2 * k; g.beginPath(); g.arc(p.x, p.y, p.sz, 0, Math.PI * 2); g.stroke(); }
+      else glow(p.x, p.y, p.sz * 2.4, p.rgb, p.life);
+    }
+    g.globalCompositeOperation = 'source-over';
+    for (const s of shells) {
+      const u = s.t / s.dur, x = s.x0 + (s.x1 - s.x0) * u, y = s.y0 + (s.y1 - s.y0) * u - Math.sin(u * Math.PI) * 40 * k;
+      drawImg(IMG['net-shell'], x, y, (90 + 40 * u) * k, s.t * s.spin);
+    }
+    // 发射器：底座 + 跟随瞄准方向转动的饭勺炮管，底座外圈画冷却进度
+    const P = PIVOT(), ang = Math.atan2(aim.y - P.y, aim.x - P.x), rot = Math.max(-1.35, Math.min(1.35, ang + Math.PI / 2));
+    drawImg(IMG['launcher-base'], P.x, P.y + 40 * k, 270 * k);
+    const bar = IMG['launcher-barrel'];
+    if (ok(bar)) {
+      const bh = BARREL_LEN * k, bw = BARREL_W * k;
+      g.save(); g.translate(P.x, P.y); g.rotate(rot);
+      g.drawImage(bar, -bw / 2, -bh * .9 + recoil * 22 * k, bw, bh); g.restore();
+    }
+    const cdLeft = Math.max(0, S.cooldownUntil - S.t), cdTotal = fishCooldown(fishBonus());
+    if (cdLeft > 0) {
+      g.strokeStyle = 'rgba(255,226,150,.9)'; g.lineWidth = 6 * k; g.lineCap = 'round';
+      g.beginPath(); g.arc(P.x, P.y + 40 * k, 132 * k, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - cdLeft / cdTotal)); g.stroke();
+    }
+    g.textAlign = 'center';
+    for (const t of texts) {
+      const u = t.t / t.life;
+      g.globalAlpha = 1 - Math.max(0, u - .6) / .4;
+      g.font = `700 ${t.size * k}px "STSong","Songti SC","SimSun",serif`;
+      g.lineWidth = 5 * k; g.strokeStyle = 'rgba(6,24,48,.85)';
+      g.strokeText(t.s, t.x, t.y - u * 60 * k); g.fillStyle = t.c; g.fillText(t.s, t.x, t.y - u * 60 * k);
+    }
+    g.globalAlpha = 1;
+  }
+
+  function frame(now) {
+    raf = 0;
+    if (!active) return;
+    const dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
+    if (!paused) update(dt);
+    draw(now);
+    raf = requestAnimationFrame(frame);
+  }
+
+  // ---------- 界面 ----------
+  function renderStats() {
+    if (!S) return;
+    const net = S.earned - S.spent;
+    $('#fishStats').textContent = `撒网 ${S.casts} · 捞到 3★×${S.caught[3]} 4★×${S.caught[4]} 5★×${S.caught[5]} · 逃走 ${S.escaped} · 本局 ${net >= 0 ? '+' : ''}${net}`;
+  }
+  function renderGear() {
+    const w = WEAPONS.find(w => w.id === state.fishGear && state.owned[w.id]);
+    const im = $('#fishGearImg');
+    if (w) im.src = itemSrc(w); else im.removeAttribute('src');
+    $('#fishGearEmpty').style.display = w ? 'none' : '';
+    $('#fishPerks').innerHTML = w ? `<b>${'★'.repeat(w.r)} ${w.name}</b>${perkRows(w.fish)}` : '<div class="none">装备栏为空：点左边的格子，装上武器池抽到的武器，获得捕鱼加成。</div>';
+  }
+  function setPaused(v) {
+    paused = v;
+    root.classList.toggle('paused', v);
+    const btn = $('#fishPauseBtn');
+    btn.querySelector('img').src = img(`fishing/btn-${v ? 'resume' : 'pause'}.png`);
+    btn.querySelector('span').textContent = v ? '继续' : '暂停';
+    btn.title = v ? '继续' : '暂停';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
+  return {
+    resize,
+    enter() {
+      active = true; resize();
+      if (!S) newSession();
+      renderGear(); renderStats(); setPaused(false);
+      last = 0; if (!raf) raf = requestAnimationFrame(frame);
+    },
+    leave() { active = false; setPaused(true); cancelAnimationFrame(raf); raf = 0; },
+    end() { S = null; },
+    restart() { newSession(); setPaused(false); },
+    togglePause() { setPaused(!paused); },
+    pauseForModal() { if (!paused) { autoPaused = true; setPaused(true); } },
+    resumeAfterModal() { if (autoPaused && active) { autoPaused = false; setPaused(false); } },
+    get paused() { return paused; },
+    get session() { return S; },
+    get fishes() { return fishes; },          // 只读，用于检查与调试
+    get weather() { return curWeather(); },
+    setWeather(key) { if (S && WEATHERS[key]) setWeather(key); },
+    aimAt(x, y) { aim = { x, y }; },
+    cast,
+    renderGear,
+  };
+})();
+
+function openFishInfo() {
+  const b = fishBonus(), w = FISHING.weather;
+  openModal('深海捞饭 · 玩法说明', `
+    <div class="sec">怎么玩</div>
+    <div>· 点击水中任意位置，发射器朝那里打出网弹，网弹到达后张开，网里的角色会被捞起<br>
+      · 每撒一网消耗 ${fishCost(b)} 米饭，冷却 ${fishCooldown(b)} 秒；捞到就获得米饭，不限时间，可随时暂停、结算<br>
+      · 捞到的角色会进入<b>角色仓库</b>，同时获得米饭；被惊开逃走的角色还留在水里，可以继续捞<br>
+      · 水下光景会随时间在清晨、白天、黄昏、夜晚、浑水之间变化</div>
+    <div class="sec">出现概率与收获</div>
+    <table class="rate-table"><tr><th>星级</th><th>出现概率</th><th>逃脱率</th><th>捞到获得</th></tr>
+      ${[5, 4, 3].map(r => `<tr><td class="stars-s">${'★'.repeat(r)}</td><td>${r === 3 ? '其余' : pct((r === 5 ? FISH_RATE5 : FISH_RATE4) * (1 + (b.lure || 0)) * w.rare)}</td><td>${pct(fishEscape(r, b, w))}</td><td>${fishReward(r, b)} 米饭</td></tr>`).join('')}</table>
+    <div class="note">出现概率与角色池的长期比例一致；出 5★ 时 50% 是 DS娘。表中数字已计入当前天气和装备的加成。</div>
+    <div class="sec">天气</div>
+    <table class="rate-table"><tr><th>天气</th><th>效果</th></tr>
+      ${Object.entries(WEATHERS).map(([key, x]) => `<tr${key === (FISHING.session && FISHING.session.weather) ? ' style="background:#fff6dc"' : ''}><td>${x.icon} ${x.name}</td><td>${x.text}</td></tr>`).join('')}</table>
+    <div class="note">天气每隔一两分钟随机变化，当前天气显示在左上角。</div>
+    <div class="sec">当前装备加成</div>
+    <div>${Object.keys(b).length ? perkRows(b) : '未装备武器。'}</div>`);
+}
+
+function openFishGear() {
+  const owned = WEAPONS.filter(w => state.owned[w.id]).sort((a, b) => b.r - a.r);
+  const cur = state.fishGear;
+  openModal('捕鱼装备栏', owned.length ? `
+    <div class="note" style="margin-bottom:calc(14*var(--u))">只能装备 1 把武器；武器来自武器活动求索，装备后立即生效。</div>
+    <div class="gear-list">${owned.map(w => `
+      <button class="gear-card${w.id === cur ? ' on' : ''}" data-act="fish-equip" data-id="${w.id === cur ? '' : w.id}">
+        ${w.id === cur ? '<span class="tagline">已装备 · 点击卸下</span>' : ''}
+        <img src="${itemSrc(w)}" alt=""><span><b>${'★'.repeat(w.r)} ${w.name}</b>${perkRows(w.fish)}</span></button>`).join('')}</div>`
+    : `<div class="empty">还没有武器。去「武器活动求索」抽一把，就能装进来获得捕鱼加成。</div>
+       <div class="row"><button class="btn dark" data-act="fish-go-weapon">前往武器活动求索</button></div>`);
+}
+
+function openFishSettle() {
+  const S = FISHING.session;
+  if (!S) { showView('gacha'); return; }
+  FISHING.pauseForModal();
+  const net = S.earned - S.spent;
+  openModal('本局结算', `
+    <div class="fish-summary">
+      <div><small>捕鱼时长</small><b>${fmtTime(S.t)}</b></div>
+      <div><small>撒网次数</small><b>${S.casts}</b></div>
+      <div><small>逃走</small><b>${S.escaped}</b></div>
+      <div><small>捞到 3★ / 4★ / 5★</small><b>${S.caught[3]} / ${S.caught[4]} / ${S.caught[5]}</b></div>
+      <div><small>消耗 / 获得米饭</small><b>${S.spent} / ${S.earned}</b></div>
+      <div><small>本局净收益</small><b class="${net >= 0 ? 'gain' : 'loss'}">${net >= 0 ? '+' : ''}${net}</b></div>
+    </div>
+    ${S.fives.length ? `<div style="text-align:center;color:#b7811c">本局捞到的 5★：${S.fives.join('、')}</div>` : ''}
+    <div class="row"><button class="btn" data-act="fish-resume">继续捕鱼</button><button class="btn" data-act="fish-restart">再来一局</button><button class="btn dark" data-act="fish-exit">结束并返回求索</button></div>`, true);
+}
+
+/* ================= 角色池首页：当期 UP 展示 ================= */
+// UP 立绘居中，其余 5★ 装在金色泡泡里围着漂浮；后面一层画布画金色粒子光
+const UP_SHOWCASE = (() => {
+  const root = $('#charShowcase'), cv = root.querySelector('.cs-fx'), g = cv.getContext('2d');
+  // 泡泡位置：相对展示框（700×800）的中心点，左、上、右各三个，避开右侧的 UP 铭牌
+  const SLOTS = [[70, 300], [52, 490], [96, 676], [196, 112], [350, 56], [504, 112], [584, 236], [586, 470], [566, 676]];
+  let raf = 0, motes = [], sparks = [], W = 1, H = 1, dpr = 1, last = 0;
+  function build() {
+    const up = upOf(POOLS.char), rest = byR(CHARS, 5).filter(c => c !== up);
+    root.querySelector('.cs-up img').src = charSrc(up.id);
+    root.querySelector('.cs-up img').alt = up.name;
+    root.querySelector('.cs-bubbles').innerHTML = rest.slice(0, SLOTS.length).map((c, i) => {
+      const [x, y] = SLOTS[i];
+      return `<button class="cs-bubble" data-act="owned-detail" data-id="${c.id}" title="${c.name}" aria-label="${c.name}"
+        style="left:calc(${x} * var(--u));top:calc(${y} * var(--u));--dur:${(4.2 + (i % 4) * .7).toFixed(1)}s;--delay:${(-i * .63).toFixed(2)}s;--dx:${i % 2 ? 8 : -8}">
+        <span class="head"><img src="${charSrc(c.id)}" alt=""></span><img class="ring" src="${img('fishing/bubble-5.png')}" alt=""></button>`;
+    }).join('');
+  }
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.clientWidth || 1; H = cv.clientHeight || 1;
+    cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const visible = () => currentView === 'gacha' && pool.key === 'char' && !document.hidden && !$('#fx').classList.contains('on');
+  function glow(x, y, r, a) {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(255,220,130,${a})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+  function frame(now) {
+    raf = 0;
+    if (!visible()) return;
+    const dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
+    if (cv.clientWidth !== W) resize();
+    const k = W / 820, cx = W / 2, cy = H * .62;           // 画布比展示框四周各大 60
+    g.clearRect(0, 0, W, H);
+    g.globalCompositeOperation = 'lighter';
+    // 身后的光晕，随呼吸明灭
+    glow(cx, cy, 300 * k, .22 + .06 * Math.sin(now / 900));
+    glow(cx, cy + 60 * k, 180 * k, .25);
+    // 上升的金色光尘
+    while (motes.length < 70) motes.push({ x: cx + (Math.random() - .5) * 420 * k, y: H * (.3 + Math.random() * .75), v: (18 + Math.random() * 40) * k, r: (1.5 + Math.random() * 3.5) * k, ph: Math.random() * 6.28, life: 1 });
+    for (const m of motes) {
+      m.y -= m.v * dt; m.ph += dt * 2; m.life -= dt * .18;
+      const a = Math.max(0, Math.min(1, m.life * 2)) * (.5 + .5 * Math.sin(m.ph));
+      glow(m.x + Math.sin(m.ph) * 8 * k, m.y, m.r * 3, .9 * a);
+    }
+    motes = motes.filter(m => m.life > 0 && m.y > -10);
+    // 偶尔闪一颗十字星
+    if (Math.random() < dt * 3) sparks.push({ x: cx + (Math.random() - .5) * 520 * k, y: H * (.15 + Math.random() * .7), t: 0, s: (8 + Math.random() * 14) * k });
+    for (const s of sparks) {
+      s.t += dt; const a = Math.sin(Math.min(1, s.t / .7) * Math.PI), r = s.s * a;
+      g.strokeStyle = `rgba(255,236,170,${a})`; g.lineWidth = 1.6 * k;
+      g.beginPath(); g.moveTo(s.x - r, s.y); g.lineTo(s.x + r, s.y); g.moveTo(s.x, s.y - r); g.lineTo(s.x, s.y + r); g.stroke();
+      glow(s.x, s.y, r * .9, .7 * a);
+    }
+    sparks = sparks.filter(s => s.t < .7);
+    g.globalCompositeOperation = 'source-over';
+    raf = requestAnimationFrame(frame);
+  }
+  function refresh() { if (visible() && !raf) { resize(); last = 0; raf = requestAnimationFrame(frame); } }
+  build();
+  document.addEventListener('visibilitychange', refresh);
+  return { refresh, resize };
+})();
 
 /* ================= 卡池切换 ================= */
 // 先按原图尺寸拼合各图层，再整体缩放，避免切片边缘各自重采样产生接缝。
@@ -1113,6 +1778,7 @@ function applyPool() {
   $('#gachaView').setAttribute('aria-label', pool.tab);
   $('#gachaView h1').textContent = pool.tab;
   if (currentView === 'gacha') document.title = `${pool.banner} · ${pool.tab}`;
+  if (typeof UP_SHOWCASE !== 'undefined') UP_SHOWCASE.refresh();
   document.querySelectorAll('#gachaView [data-act="preview"]').forEach(b => { b.title = `查看 UP ${pool.noun}`; b.setAttribute('aria-label', b.title); });
   renderHud();
 }
@@ -1124,6 +1790,12 @@ function switchPool(key) {
   SFX.whoosh();
   toast(`已切换到「${pool.tab} · ${pool.banner}」`);
 }
+
+const fishCanvas = $('#fishCanvas');
+const fishPoint = e => { const r = fishCanvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+fishCanvas.addEventListener('pointermove', e => FISHING.aimAt(...fishPoint(e)));
+fishCanvas.addEventListener('pointerdown', e => { if (e.button > 0) return; FISHING.aimAt(...fishPoint(e)); FISHING.cast(...fishPoint(e)); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && currentView === 'fishing' && !FISHING.paused) FISHING.togglePause(); });
 
 addEventListener('resize', fit);
 fit();
