@@ -22,6 +22,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .resource > img, .icon-button img { width: 100%; height: 100%; object-fit: fill; display: block; }
 .resource > span { position: absolute; left: 31%; top: 18%; width: 47%; height: 61%; display: flex; align-items: center; justify-content: center; background: url(assets/ui/resource-fill.png) center / 100% 100%; font: 600 calc(32 * var(--u)) var(--serif); font-variant-numeric: tabular-nums; }
 .icon-button { width: calc(80 * var(--u)); height: calc(80 * var(--u)); }
+/* 重置按钮：仿货币栏的浅色胶囊加金边，抽卡页和仓库页共用 */
+.reset-chip {
+  display: inline-flex; align-items: center; justify-content: center; gap: calc(6 * var(--u)); cursor: pointer;
+  height: calc(50 * var(--u)); min-width: calc(112 * var(--u)); padding: 0 calc(12 * var(--u)); margin: 0; white-space: nowrap;
+  border: calc(2.5 * var(--u)) solid var(--gold); border-radius: calc(25 * var(--u));
+  background: linear-gradient(#f6f8fb, #e4e9f1); color: var(--navy); font: 600 calc(24 * var(--u)) var(--serif); letter-spacing: calc(2 * var(--u));
+  box-shadow: 0 calc(2 * var(--u)) calc(8 * var(--u)) rgba(20, 40, 80, .35); transition: filter .15s, transform .1s;
+}
+.reset-chip span { font-size: calc(28 * var(--u)); line-height: 1; color: #b7811c; }
+.reset-chip:hover { filter: brightness(1.06) drop-shadow(0 0 calc(6 * var(--u)) rgba(243, 214, 139, .9)); }
+.reset-chip:active { transform: scale(.96); }
+.resources .reset-chip { height: calc(60 * var(--u)); border-radius: calc(30 * var(--u)); }
 .game-view { position: absolute; inset: 0; }
 .original-capsule, .inventory-tabs button, .inventory-toolbar select, .inventory-empty button { background: url(assets/ui/capsule-frame.png) center / 100% 100% no-repeat; color: var(--navy); border: 0; font-family: var(--serif); }
 .game-footer { position: absolute; bottom: calc(20 * var(--u)); left: calc(34 * var(--u)); right: calc(40 * var(--u)); z-index: 5; display: flex; align-items: flex-end; gap: calc(30 * var(--u)); pointer-events: none; }
@@ -336,8 +348,14 @@ button { font-family: inherit; }
 @keyframes cardIn { 0% { opacity: 0; transform: perspective(calc(900 * var(--u))) rotateY(95deg) translateY(calc(40 * var(--u))); filter: brightness(4); } 55% { opacity: 1; transform: perspective(calc(900 * var(--u))) rotateY(-12deg); filter: brightness(2.2); } 100% { transform: none; filter: none; } }
 .card::before { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(var(--rc), .95) 0%, rgba(var(--rc), .35) 26%, transparent 55%); z-index: 1; }
 .card img { position: absolute; left: 50%; top: calc(30 * var(--u)); height: calc(560 * var(--u)); transform: translateX(-50%); }
-.card .cs { position: absolute; left: 0; right: 0; bottom: calc(70 * var(--u)); z-index: 2; text-align: center; font-size: calc(22 * var(--u)); color: #ffe39a; text-shadow: 0 0 4px rgba(0,0,0,.6); letter-spacing: calc(1 * var(--u)); }
-.card .cn { position: absolute; left: 0; right: 0; bottom: calc(26 * var(--u)); z-index: 2; text-align: center; color: #fff; font-family: var(--serif); font-size: calc(26 * var(--u)); text-shadow: 0 0 calc(6 * var(--u)) rgba(0,0,0,.7); }
+/* 星级在上、名字在下，一起贴卡底；名字折成两行时整体上移，不会和星级重叠 */
+.card .cmeta { position: absolute; left: calc(6 * var(--u)); right: calc(6 * var(--u)); bottom: calc(26 * var(--u)); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: calc(6 * var(--u)); }
+.card .cs { text-align: center; font-size: calc(22 * var(--u)); line-height: 1; color: #ffe39a; text-shadow: 0 0 4px rgba(0,0,0,.6); letter-spacing: calc(1 * var(--u)); }
+.card .cn { text-align: center; color: #fff; font-family: var(--serif); font-size: calc(26 * var(--u)); line-height: 1.2; word-break: break-all; text-shadow: 0 0 calc(6 * var(--u)) rgba(0,0,0,.7); }
+/* 名字超过 7 个字时用小一号字，尽量排成一行，各卡星级保持同一高度 */
+.card .cn.long { font-size: calc(20 * var(--u)); line-height: calc(31.2 * var(--u)); }
+/* 「小小」系列：人物高度为卡面的一半，站在名字上方 */
+.card.mini img { top: auto; bottom: calc(130 * var(--u)); height: calc(320 * var(--u)); }
 .card.r5 { background: linear-gradient(180deg, #6b4d16, #1e1606); }
 .card.r5::after { content: ""; position: absolute; inset: 0; z-index: 3; background: linear-gradient(115deg, transparent 30%, rgba(255, 240, 190, .7) 50%, transparent 70%); background-size: 300% 100%; animation: cardShine 2.4s ease-in-out infinite; }
 @keyframes cardShine { 0% { background-position: 120% 0; } 60%, 100% { background-position: -20% 0; } }
@@ -456,6 +474,8 @@ button { font-family: inherit; }
   .resource { width: 104px; height: 31px; }
   .resource > span { font-size: 15px; }
   .icon-button { width: 34px; height: 34px; }
+  .resources .reset-chip { height: 28px; min-width: 0; padding: 0 8px; font-size: 13px; border-width: 1.5px; letter-spacing: 0; }
+  .resources .reset-chip span { font-size: 15px; }
   .game-footer { left: 10px; right: 10px; bottom: 12px; gap: 0; }
   .main-nav { flex: 4; justify-content: space-around; gap: 0; }
   .footer-tools { flex: 2; justify-content: space-around; gap: 0; }
@@ -509,12 +529,117 @@ button { font-family: inherit; }
 .warehouse-entry span { font: 700 calc(29 * var(--u))/1.3 var(--serif); white-space: nowrap; text-shadow: 0 2px 4px #0a203b; }
 .warehouse-entry:hover { filter: brightness(1.13) drop-shadow(0 0 6px #ffe2a4); }
 .collection-info small { font: calc(18 * var(--u)) var(--sans); }
+/* 「小小」系列：立绘高度为画面的一半（1125 的 50%） */
+#reveal.mini .char { height: calc(562 * var(--u)); }
 #reveal.wp .char { height: calc(760 * var(--u)); bottom: calc(170 * var(--u)); }
 .card.wp img { top: 46%; height: calc(470 * var(--u)); width: 150%; object-fit: contain; transform: translate(-50%, -50%); }
 .pool .pc.wp img { height: 70%; max-width: 88%; object-fit: contain; bottom: calc(46 * var(--u)); }
 .preview.wp .art img { max-height: 92%; }
 @media (max-width: 700px) and (orientation: portrait) {
-  #stage[data-view="gacha"] .mask { position: fixed; width: 100vw; height: 100dvh; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-  #stage[data-view="gacha"]:has(.mask.open) { overflow: visible; }
+  #stage:is([data-view="gacha"], [data-view="fishing"]) .mask { position: fixed; width: 100vw; height: 100dvh; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  #stage:is([data-view="gacha"], [data-view="fishing"]):has(.mask.open) { overflow: visible; }
   .collection-info small { font-size: 12px; }
 }
+
+/* ---------- 饭点活动：深海捞饭 ---------- */
+[data-view="fishing"] > .game-header, [data-view="fishing"] > .game-footer { display: none; }
+[data-view="fishing"] .fishing-view { --u: inherit; }
+.fishing-view { overflow: hidden; background: #062033; user-select: none; }
+.fish-scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 2.4s ease; }
+.fish-scene.on { opacity: 1; }
+#fishCanvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.fish-title, .fish-clock, .fish-rice { display: flex; align-items: center; color: #fff; text-shadow: 0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(4, 22, 44, .9); pointer-events: none; }
+.fish-title { flex-direction: column; align-items: flex-start; justify-content: center; padding-left: calc(26 * var(--u)); border-left: calc(4 * var(--u)) solid var(--gold-hi);
+  background: linear-gradient(90deg, rgba(8, 30, 60, .62), rgba(8, 30, 60, 0)); }
+.fish-title b { font: 700 calc(40 * var(--u)) var(--serif); letter-spacing: calc(4 * var(--u)); }
+.fish-title span { font: calc(22 * var(--u)) var(--serif); color: var(--gold-hi); letter-spacing: calc(3 * var(--u)); }
+.fish-clock { flex-direction: column; justify-content: center; }
+.fish-clock span { font: 700 calc(44 * var(--u)) var(--serif); font-variant-numeric: tabular-nums; letter-spacing: calc(3 * var(--u)); }
+.fish-clock small { font: calc(21 * var(--u)) var(--sans); opacity: .95; white-space: nowrap; }
+.fish-rice { gap: calc(10 * var(--u)); padding: 0 calc(10 * var(--u)) 0 calc(6 * var(--u)); pointer-events: auto;
+  background: linear-gradient(#f2f5f9, #e1e8f0); border: calc(2.5 * var(--u)) solid var(--gold); border-radius: calc(33 * var(--u)); color: var(--navy); text-shadow: none; }
+.fish-rice img { width: calc(58 * var(--u)); height: calc(58 * var(--u)); object-fit: contain; }
+.fish-rice span { flex: 1; text-align: center; font: 700 calc(32 * var(--u)) var(--serif); font-variant-numeric: tabular-nums; }
+.fish-rice span.bump { animation: bump .5s ease; }
+.fish-rice button { width: calc(44 * var(--u)); height: calc(44 * var(--u)); border-radius: 50%; border: calc(2 * var(--u)) solid var(--gold); background: var(--navy); color: #fff; font-size: calc(26 * var(--u)); line-height: 1; cursor: pointer; padding: 0; }
+.fish-round, .fish-btn, .fish-gear { border: 0; padding: 0; background: none; cursor: pointer; }
+.fish-round img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 calc(3 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, .45)); }
+.fish-btn { display: flex; flex-direction: column; align-items: center; gap: calc(4 * var(--u)); color: #fff; }
+.fish-btn img { width: calc(128 * var(--u)); height: calc(128 * var(--u)); object-fit: contain; filter: drop-shadow(0 calc(4 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, .45)); }
+.fish-btn span { font: 700 calc(26 * var(--u)) var(--serif); text-shadow: 0 2px 4px #0a203b; }
+.fish-round:hover, .fish-btn:hover, .fish-gear:hover { filter: brightness(1.1) drop-shadow(0 0 calc(8 * var(--u)) #ffe2a4); }
+.fish-round:active, .fish-btn:active, .fish-gear:active { transform: scale(.95); }
+.fish-gear .slot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.fish-gear .weapon { position: absolute; left: 18%; top: 14%; width: 64%; height: 72%; object-fit: contain; filter: drop-shadow(0 0 calc(10 * var(--u)) rgba(255, 214, 120, .7)); }
+.fish-gear .weapon:not([src]), .fish-gear .weapon[src=""] { display: none; }
+.fish-gear span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font: 700 calc(26 * var(--u)) var(--serif); text-shadow: 0 2px 4px #0a203b; }
+.fish-perks { display: flex; flex-direction: column; justify-content: center; gap: calc(8 * var(--u)); color: #fff; text-shadow: 0 2px 5px rgba(4, 22, 44, .95); pointer-events: none; }
+.fish-perks b { font: 700 calc(30 * var(--u)) var(--serif); }
+.fish-perks .perk { display: flex; align-items: center; gap: calc(10 * var(--u)); font: calc(22 * var(--u)) var(--sans); }
+.fish-perks .perk img { width: calc(44 * var(--u)); height: calc(44 * var(--u)); object-fit: contain; }
+.fish-perks .none { font: calc(22 * var(--u)) var(--sans); opacity: .9; }
+.fish-feed { display: flex; flex-direction: column; gap: calc(10 * var(--u)); pointer-events: none; }
+.fish-feed-item { display: flex; align-items: center; gap: calc(12 * var(--u)); padding: calc(8 * var(--u)) calc(16 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)); color: #fff;
+  border-left: calc(4 * var(--u)) solid rgb(var(--rc)); background: linear-gradient(90deg, rgba(8, 26, 52, .78), rgba(8, 26, 52, .2));
+  animation: feedIn .35s ease-out both; font: calc(22 * var(--u)) var(--sans); }
+.fish-feed-item img { width: calc(60 * var(--u)); height: calc(60 * var(--u)); object-fit: cover; object-position: top; border-radius: 50%; border: calc(2 * var(--u)) solid rgb(var(--rc)); background: rgba(255, 255, 255, .2); }
+.fish-feed-item b { flex: 1; font: 700 calc(24 * var(--u)) var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fish-feed-item em { font-style: normal; color: var(--gold-hi); font-weight: 700; }
+.fish-feed-item.r5 { background: linear-gradient(90deg, rgba(120, 82, 16, .85), rgba(120, 82, 16, .2)); }
+.fish-feed-item.out { animation: feedOut .4s ease-in both; }
+@keyframes feedIn { from { opacity: 0; transform: translateX(calc(60 * var(--u))); } }
+@keyframes feedOut { to { opacity: 0; transform: translateX(calc(60 * var(--u))); } }
+.fish-paused { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: calc(12 * var(--u));
+  border: 0; background: rgba(4, 16, 34, .55); color: #fff; cursor: pointer; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); z-index: 4; }
+.fishing-view.paused .fish-paused { display: flex; }
+.fish-paused img { width: calc(170 * var(--u)); height: calc(170 * var(--u)); object-fit: contain; }
+.fish-paused b { font: 700 calc(52 * var(--u)) var(--serif); letter-spacing: calc(8 * var(--u)); }
+.fish-paused span { font: calc(26 * var(--u)) var(--sans); opacity: .9; }
+.fish-fly { position: absolute; z-index: 6; width: calc(48 * var(--u)); height: calc(48 * var(--u)); pointer-events: none; transition: transform .75s cubic-bezier(.5, 0, .7, 1), opacity .75s; }
+/* 结算面板与装备栏弹窗 */
+.fish-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(14 * var(--u)); margin-bottom: calc(18 * var(--u)); }
+.fish-summary div { background: url(assets/ui/capsule-frame.png) center / 100% 100%; padding: calc(14 * var(--u)) 0; text-align: center; }
+.fish-summary small { display: block; color: #6b7690; font-size: .8em; }
+.fish-summary b { font: 700 1.3em var(--serif); color: var(--navy); }
+.fish-summary b.gain { color: #2e7d4f; }
+.fish-summary b.loss { color: #a83d35; }
+.gear-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(16 * var(--u)); }
+.gear-card { position: relative; display: flex; gap: calc(12 * var(--u)); align-items: center; text-align: left; cursor: pointer; padding: calc(12 * var(--u)); border: calc(2 * var(--u)) solid #d7c08f; border-radius: calc(10 * var(--u)); background: linear-gradient(#fff, #eef2f8); font: inherit; color: var(--navy); }
+.gear-card.on { border-color: #c48a1c; box-shadow: 0 0 0 calc(3 * var(--u)) rgba(243, 214, 139, .9); }
+.gear-card > img { width: calc(110 * var(--u)); height: calc(110 * var(--u)); object-fit: contain; flex: none; }
+.gear-card b { display: block; font: 700 calc(26 * var(--u)) var(--serif); }
+.gear-card .perk { display: flex; align-items: center; gap: calc(6 * var(--u)); font-size: calc(19 * var(--u)); line-height: 1.4; }
+.gear-card .perk img { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
+.gear-card .tagline { position: absolute; right: calc(10 * var(--u)); top: calc(8 * var(--u)); font-size: calc(17 * var(--u)); color: #b7811c; }
+
+@media (max-width: 700px) and (orientation: portrait) {
+  .gear-list { grid-template-columns: 1fr; }
+}
+
+/* ---------- 角色池首页：当期 UP 展示 ---------- */
+.char-showcase { pointer-events: none; transition: opacity .45s ease, transform .45s ease; }
+#stage.pool-weapon .char-showcase { opacity: 0; visibility: hidden; transform: translateY(calc(30 * var(--u))); }
+.char-showcase .cs-fx { position: absolute; inset: calc(-60 * var(--u)); width: calc(100% + 120 * var(--u)); height: calc(100% + 120 * var(--u)); }
+.cs-up { position: absolute; left: 50%; bottom: 0; width: calc(470 * var(--u)); height: calc(640 * var(--u)); margin-left: calc(-235 * var(--u));
+  border: 0; padding: 0; background: none; cursor: pointer; pointer-events: auto; animation: upFloat 4.6s ease-in-out infinite; }
+.cs-up img { width: 100%; height: 100%; object-fit: contain; object-position: bottom;
+  filter: drop-shadow(0 0 calc(12 * var(--u)) rgba(255, 214, 110, .95)) drop-shadow(0 0 calc(34 * var(--u)) rgba(255, 190, 70, .6)); }
+.cs-up:hover img { filter: brightness(1.08) drop-shadow(0 0 calc(16 * var(--u)) #ffe6a0) drop-shadow(0 0 calc(44 * var(--u)) rgba(255, 190, 70, .8)); }
+@keyframes upFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(-14 * var(--u))); } }
+/* 其余 5★：高度约为 UP 的四分之一，装在金色泡泡里漂浮 */
+.cs-bubble { position: absolute; width: calc(156 * var(--u)); height: calc(156 * var(--u)); margin: calc(-78 * var(--u)) 0 0 calc(-78 * var(--u));
+  border: 0; padding: 0; background: none; cursor: pointer; pointer-events: auto; animation: bubbleFloat var(--dur, 5s) ease-in-out var(--delay, 0s) infinite; }
+.cs-bubble .head { position: absolute; inset: 13%; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 40%, rgba(255, 246, 220, .5), rgba(255, 210, 120, .15)); }
+.cs-bubble .head img { width: 100%; height: 165%; object-fit: cover; object-position: top; }
+.cs-bubble .ring { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.cs-bubble:hover { filter: brightness(1.15) drop-shadow(0 0 calc(10 * var(--u)) #ffe2a4); }
+@keyframes bubbleFloat { 0%, 100% { transform: translate(0, 0) rotate(-3deg); } 50% { transform: translate(calc(var(--dx, 6) * var(--u)), calc(-18 * var(--u))) rotate(3deg); } }
+
+/* 捕鱼：天气标签与“NEW” */
+.fish-weather { display: flex; align-items: center; gap: calc(14 * var(--u)); padding: 0 calc(18 * var(--u)); pointer-events: none; color: #fff;
+  background: linear-gradient(90deg, rgba(8, 30, 60, .7), rgba(8, 30, 60, 0)); border-left: calc(4 * var(--u)) solid #8fd0ff; text-shadow: 0 2px 4px rgba(4, 22, 44, .9); }
+.fish-weather b { font: 700 calc(28 * var(--u)) var(--serif); white-space: nowrap; }
+.fish-weather span { font: calc(20 * var(--u)) var(--sans); opacity: .95; }
+.fish-weather[data-weather="storm"] { border-left-color: #ffd36a; }
+.fish-weather[data-weather="clear"] { border-left-color: #fff0b0; }
+.fish-feed-item i { font: italic 700 calc(18 * var(--u)) var(--serif); color: #fff; background: #d9534f; padding: 0 calc(8 * var(--u)); border-radius: calc(4 * var(--u)); }

@@ -14,6 +14,7 @@
   <header class="game-header">
     <button class="brand" data-act="navigate" data-view="gacha" aria-label="返回求索"><img src="assets/app.png" alt=""><span>深海的嘟囔</span></button>
     <div class="resources">
+      <button class="reset-chip" data-act="reset-collection" title="重置抽卡记录和仓库" aria-label="重置抽卡记录和仓库"><span aria-hidden="true">↺</span>重置</button>
       <button class="resource" data-act="shop-rice" aria-label="米饭，打开食堂"><img src="assets/ui/resource-rice.png" alt=""><span id="riceNum">0</span></button>
       <button class="resource" data-act="shop-whale" aria-label="鲸币，打开兑换"><img src="assets/ui/resource-whale.png" alt=""><span id="whaleNum">0</span></button>
       <button class="icon-button" data-act="navigate" data-view="gacha" aria-label="返回求索"><img src="assets/ui/close.png" alt=""></button>
@@ -46,6 +47,12 @@
       <img data-layer data-x="1608" data-y="932" src="assets/ui/weapon/pull-ten.png" alt="">
     </div>
   </div>
+  <!-- 角色池：当期 UP 立绘 + 其余 5★ 泡泡 + 金光粒子；内容由 app.js 的 UP_SHOWCASE 生成 -->
+  <div class="U char-showcase" id="charShowcase" style="--x:880;--y:96;--w:700;--h:800" aria-label="当期 UP 角色">
+    <canvas class="cs-fx"></canvas>
+    <button class="cs-up" data-act="preview" title="查看 UP 角色" aria-label="查看 UP 角色"><img alt=""></button>
+    <div class="cs-bubbles"></div>
+  </div>
   <button class="U showcase" data-act="preview" title="查看 UP 武器" aria-label="查看 UP 武器" style="--x:1010;--y:110;--w:470;--h:760"><img src="assets/weapons/whalefall.png" alt="鲸落"></button>
 
   <!-- 顶栏货币：遮住底图上的数字，显示实时余额 -->
@@ -53,6 +60,8 @@
   <div class="U cur" id="gachaWhaleNum" style="--x:1724;--y:28;--w:110;--h:44">0</div>
 
   <!-- 可点区域（坐标对应底图 2000×1125） -->
+  <!-- 重置抽卡记录和仓库：放在米饭栏左边 -->
+  <button class="U reset-chip" data-act="reset-collection" title="重置抽卡记录和仓库" aria-label="重置抽卡记录和仓库" style="--x:1244;--y:24;--w:126;--h:50"><span aria-hidden="true">↺</span>重置</button>
   <button class="U hot" data-act="shop-rice" title="米饭" aria-label="米饭" style="--x:1380;--y:20;--w:200;--h:58;--r:29"></button>
   <button class="U hot round" data-act="shop-rice" title="充值米饭" aria-label="充值米饭" style="--x:1583;--y:24;--w:50;--h:50"></button>
   <button class="U hot" data-act="shop-whale" title="鲸币" aria-label="鲸币" style="--x:1650;--y:20;--w:185;--h:58;--r:29"></button>
@@ -89,6 +98,23 @@
 
   <div class="U gacha-pity-number pity-character" style="--x:411.1328125;--y:544.921875;--w:64.453125;--h:44.921875">90</div>
   <div class="U gacha-pity-number pity-weapon" style="--x:406.25;--y:546.875;--w:67.3828;--h:43.9453">90</div>
+    </section>
+    <!-- 饭点活动：深海捞饭。画面在 fishCanvas 上绘制，DOM 只负责界面文字和按钮；坐标同样是 2000×1125 -->
+    <section class="game-view fishing-view" id="fishingView" aria-label="饭点活动 · 深海捞饭" hidden>
+      <img class="fish-scene" alt=""><img class="fish-scene" alt="">
+      <canvas id="fishCanvas" aria-label="点击水中撒网"></canvas>
+      <div class="U fish-title" style="--x:28;--y:20;--w:560;--h:88"><b>饭点活动 · 深海捞饭</b><span id="fishSceneName"></span></div>
+      <div class="U fish-weather" id="fishWeather" style="--x:28;--y:118;--w:720;--h:58"></div>
+      <div class="U fish-clock" style="--x:640;--y:20;--w:720;--h:88"><span id="fishTimer">00:00</span><small id="fishStats"></small></div>
+      <div class="U fish-rice" style="--x:1400;--y:28;--w:330;--h:66"><img src="assets/icons/rice.png" alt=""><span id="fishRiceNum">0</span><button data-act="shop-rice" title="补充米饭" aria-label="补充米饭">＋</button></div>
+      <button class="U fish-round" data-act="fish-info" title="玩法说明" aria-label="玩法说明" style="--x:1752;--y:24;--w:76;--h:76"><img src="assets/icons/bulb.png" alt=""></button>
+      <button class="U fish-round" data-act="fish-settle" title="结算并离开" aria-label="结算并离开" style="--x:1852;--y:24;--w:76;--h:76"><img src="assets/ui/close.png" alt=""></button>
+      <div class="U fish-feed" id="fishFeed" style="--x:1560;--y:130;--w:420;--h:520" aria-live="polite"></div>
+      <button class="U fish-gear" data-act="fish-gear" title="装备栏" aria-label="装备栏" style="--x:30;--y:850;--w:250;--h:230"><img class="slot" src="assets/fishing/gear-slot.png" alt=""><img class="weapon" id="fishGearImg" alt=""><span id="fishGearEmpty">＋ 装备武器</span></button>
+      <div class="U fish-perks" id="fishPerks" style="--x:296;--y:880;--w:520;--h:200"></div>
+      <button class="U fish-btn" data-act="fish-pause" id="fishPauseBtn" title="暂停" aria-label="暂停" style="--x:1640;--y:930;--w:150;--h:166"><img src="assets/fishing/btn-pause.png" alt=""><span>暂停</span></button>
+      <button class="U fish-btn" data-act="fish-settle" title="结算" aria-label="结算" style="--x:1808;--y:930;--w:150;--h:166"><img src="assets/fishing/btn-settle.png" alt=""><span>结算</span></button>
+      <button class="fish-paused" data-act="fish-pause" aria-label="继续捕鱼"><img src="assets/fishing/btn-resume.png" alt=""><b>已暂停</b><span>点击继续捕鱼</span></button>
     </section>
     <section class="game-view inventory-view" id="charactersView" aria-label="角色仓库" hidden>
       <div class="view-heading original-capsule"><h1>角色仓库 <small class="collection-total"></small></h1></div>
